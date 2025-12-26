@@ -24,20 +24,19 @@ if (! class_exists('EWM_Plugin')) {
 
         const VERSION = '0.1.0';
 
-        /**
-         * @var EWM_Plugin|null
-         */
         private static $instance = null;
 
-        /**
-         * @var EWM_Templates_CPT
-         */
+        /** @var EWM_Templates_CPT */
         private $templates_cpt;
 
-        /**
-         * @var EWM_SETTINGS
-         */
+        /** @var EWM_Settings */
         private $settings;
+
+        /** @var EWM_Meta */
+        private $meta;
+
+        /** @var EWM_Editor_Assets */
+        private $editor_assets;
 
         public static function instance()
         {
@@ -52,13 +51,17 @@ if (! class_exists('EWM_Plugin')) {
         {
             $this->define_constants();
 
-            // Load dependencies.
+            // Load classes.
             require_once EWM_PATH . 'includes/class-ewm-templates-cpt.php';
             require_once EWM_PATH . 'includes/class-ewm-settings.php';
+            require_once EWM_PATH . 'includes/class-ewm-meta.php';
+            require_once EWM_PATH . 'includes/class-ewm-editor-assets.php';
 
-            // Instantiate classes.
+            // Instantiate.
             $this->templates_cpt = new EWM_Templates_CPT();
             $this->settings      = new EWM_Settings();
+            $this->meta          = new EWM_Meta();
+            $this->editor_assets = new EWM_Editor_Assets();
 
             // Hooks.
             add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
@@ -80,7 +83,7 @@ if (! class_exists('EWM_Plugin')) {
 
         public function on_init()
         {
-            // Anything else on init later (settings, meta, etc).
+            // other init stuff later (if needed)
         }
     }
 }
