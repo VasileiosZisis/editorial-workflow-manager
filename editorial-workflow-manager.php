@@ -22,25 +22,18 @@ if (! class_exists('EWM_Plugin')) {
     final class EWM_Plugin
     {
 
-        /**
-         * Plugin version.
-         *
-         * @var string
-         */
         const VERSION = '0.1.0';
 
         /**
-         * Singleton instance.
-         *
          * @var EWM_Plugin|null
          */
         private static $instance = null;
 
         /**
-         * Get singleton instance.
-         *
-         * @return EWM_Plugin
+         * @var EWM_Templates_CPT
          */
+        private $templates_cpt;
+
         public static function instance()
         {
             if (null === self::$instance) {
@@ -50,21 +43,21 @@ if (! class_exists('EWM_Plugin')) {
             return self::$instance;
         }
 
-        /**
-         * Constructor.
-         */
         private function __construct()
         {
             $this->define_constants();
 
-            // Main hooks.
+            // Load dependencies.
+            require_once EWM_PATH . 'includes/class-ewm-templates-cpt.php';
+
+            // Instantiate classes.
+            $this->templates_cpt = new EWM_Templates_CPT();
+
+            // Hooks.
             add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
             add_action('init', [$this, 'on_init']);
         }
 
-        /**
-         * Define plugin constants.
-         */
         private function define_constants()
         {
             define('EWM_VERSION', self::VERSION);
@@ -73,21 +66,14 @@ if (! class_exists('EWM_Plugin')) {
             define('EWM_URL', plugin_dir_url(__FILE__));
         }
 
-        /**
-         * Runs after all plugins are loaded.
-         */
         public function on_plugins_loaded()
         {
-            // Load text domain here later if you want translations.
-            // load_plugin_textdomain( 'editorial-workflow-manager', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+            // translations later
         }
 
-        /**
-         * Runs on init.
-         */
         public function on_init()
         {
-            // You will register CPTs, settings, REST routes, etc. here later.
+            // Anything else on init later (settings, meta, etc).
         }
     }
 }
