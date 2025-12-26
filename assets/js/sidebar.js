@@ -1,18 +1,18 @@
 (function () {
   const { registerPlugin } = wp.plugins;
-  const { PluginSidebar, PluginSidebarMoreMenuItem } = wp.editPost;
+  const { PluginSidebar, PluginSidebarMoreMenuItem, PluginPostStatusInfo } =
+    wp.editPost;
   const { PanelBody, CheckboxControl, Notice } = wp.components;
   const { Fragment, createElement: el, useMemo } = wp.element;
   const { useSelect, useDispatch } = wp.data;
 
-  const SidebarContent = () => {
+  const useChecklist = () => {
     const items =
       window.EWM_CHECKLIST_DATA &&
       Array.isArray(window.EWM_CHECKLIST_DATA.items)
         ? window.EWM_CHECKLIST_DATA.items
         : [];
 
-    // Get post meta from the editor store.
     const meta = useSelect(
       (select) => select('core/editor').getEditedPostAttribute('meta') || {},
       []
@@ -42,12 +42,25 @@
       });
     };
 
-    const allDone = useMemo(() => {
-      if (!items.length) {
-        return false;
-      }
-      return items.every((label) => checkedItems.includes(label));
-    }, [items, checkedItems]);
+    const total = items.length;
+    const completed = useMemo(
+      () => items.filter((label) => checkedItems.includes(label)).length,
+      [items, checkedItems]
+    );
+    const allDone = total > 0 && completed === total;
+
+    return {
+      items,
+      checkedItems,
+      total,
+      completed,
+      allDone,
+      toggleItem,
+    };
+  };
+
+  const SidebarContent = () => {
+    const { items, checkedItems, allDone, toggleItem } = useChecklist();
 
     if (!items.length) {
       return el(
@@ -82,7 +95,35 @@
     );
   };
 
-  const EditorialChecklistSidebar = () =>
+  // This adds a little info line inside "Status & visibility"
+  const ChecklistStatusInfo = () => {
+    const { items, total, completed, allDone } = useChecklist();
+
+    if (!items.length) {
+      // If no template, don't show anything.
+      return null;
+    }
+
+    const text = allDone
+      ? 'Checklist complete.'
+      : `Checklist: ${completed} / ${total} items done`;
+
+    return el(
+      PluginPostStatusInfo,
+      null,
+      el(
+        'span',
+        {
+          style: allDone
+            ? { color: 'inherit' }
+            : { color: '#d63638', fontWeight: '500' }, // subtle red when incomplete
+        },
+        text
+      )
+    );
+  };
+
+  const EditorialChecklistPlugin = () =>
     el(
       Fragment,
       null,
@@ -99,10 +140,11 @@
           icon: 'yes-alt',
         },
         el(SidebarContent, null)
-      )
+      ),
+      el(ChecklistStatusInfo, null)
     );
 
   registerPlugin('ewm-checklist-plugin', {
-    render: EditorialChecklistSidebar,
+    render: EditorialChecklistPlugin,
   });
 })();
