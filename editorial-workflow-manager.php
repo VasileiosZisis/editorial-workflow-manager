@@ -34,6 +34,11 @@ if (! class_exists('EWM_Plugin')) {
          */
         private $templates_cpt;
 
+        /**
+         * @var EWM_SETTINGS
+         */
+        private $settings;
+
         public static function instance()
         {
             if (null === self::$instance) {
@@ -49,9 +54,11 @@ if (! class_exists('EWM_Plugin')) {
 
             // Load dependencies.
             require_once EWM_PATH . 'includes/class-ewm-templates-cpt.php';
+            require_once EWM_PATH . 'includes/class-ewm-settings.php';
 
             // Instantiate classes.
             $this->templates_cpt = new EWM_Templates_CPT();
+            $this->settings      = new EWM_Settings();
 
             // Hooks.
             add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
