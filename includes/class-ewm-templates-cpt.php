@@ -123,7 +123,11 @@ if (! class_exists('EWM_Templates_CPT')) {
             }
 
             // Nonce check.
-            if (! isset($_POST['ewm_template_items_nonce']) || ! wp_verify_nonce($_POST['ewm_template_items_nonce'], 'ewm_save_template_items')) {
+            $nonce = isset($_POST['ewm_template_items_nonce'])
+                ? sanitize_text_field(wp_unslash($_POST['ewm_template_items_nonce']))
+                : '';
+
+            if (! $nonce || ! wp_verify_nonce($nonce, 'ewm_save_template_items')) {
                 return;
             }
 
@@ -138,9 +142,17 @@ if (! class_exists('EWM_Templates_CPT')) {
                 return;
             }
 
-            $raw   = wp_unslash($_POST['ewm_template_items']);
+            $raw = sanitize_textarea_field(wp_unslash($_POST['ewm_template_items']));
+
             $lines = preg_split('/\R/', $raw); // split on any newline type
-            $items = array_filter(array_map('trim', $lines));
+            $items = array_filter(
+                array_map(
+                    static function ($line) {
+                        return sanitize_text_field(trim($line));
+                    },
+                    $lines
+                )
+            );
 
             update_post_meta($post_id, '_ewm_items', $items);
         }

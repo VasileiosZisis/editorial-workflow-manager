@@ -5,10 +5,12 @@
  * Description: Add editorial checklists and approvals to the WordPress editor.
  * Version:     0.3.0
  * Author:      Vasileios Zisis
+ * Author URI:  https://www.vasiliszisis.me/
  * Text Domain: editorial-workflow-manager
- * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 7.4
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 if (! defined('ABSPATH')) {
@@ -63,7 +65,6 @@ if (! class_exists('EWM_Plugin')) {
             $this->editor_assets = new EWM_Editor_Assets();
 
             // Hooks.
-            add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
             add_action('init', [$this, 'on_init']);
         }
 
@@ -74,16 +75,6 @@ if (! class_exists('EWM_Plugin')) {
             define('EWM_PATH', plugin_dir_path(__FILE__));
             define('EWM_URL', plugin_dir_url(__FILE__));
         }
-
-        public function on_plugins_loaded()
-        {
-            load_plugin_textdomain(
-                'editorial-workflow-manager',
-                false,
-                dirname(plugin_basename(__FILE__)) . '/languages'
-            );
-        }
-
 
         public function on_init()
         {

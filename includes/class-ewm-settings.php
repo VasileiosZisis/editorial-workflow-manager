@@ -188,7 +188,7 @@ if (! class_exists('EWM_Settings')) {
                                                                     ? 'selected'
                                                                     : '';
                                                                 ?>
-                                                                <option value="<?php echo esc_attr($template->ID); ?>" <?php echo $selected; ?>>
+                                                                <option value="<?php echo esc_attr($template->ID); ?>" <?php selected((int) ($mappings[$post_type] ?? 0), (int) $template->ID); ?>>
                                                                     <?php echo esc_html($template->post_title); ?>
                                                                 </option>
                                                             <?php endforeach; ?>
