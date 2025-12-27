@@ -2,11 +2,9 @@
 
 /**
  * Plugin Name: Editorial Workflow Manager
- * Plugin URI:  https://example.com/   // optional, you can change later
  * Description: Add editorial checklists and approvals to the WordPress editor.
- * Version:     0.1.0
- * Author:      Your Name
- * Author URI:  https://example.com/   // optional
+ * Version:     0.3.0
+ * Author:      Vasileios Zisis
  * Text Domain: editorial-workflow-manager
  * Domain Path: /languages
  * Requires at least: 6.0

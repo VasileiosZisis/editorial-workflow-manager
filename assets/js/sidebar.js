@@ -1,7 +1,7 @@
 (function () {
   const { registerPlugin } = wp.plugins;
   const { PluginSidebar, PluginSidebarMoreMenuItem, PluginPostStatusInfo } =
-    wp.editPost;
+    wp.editor;
   const { PanelBody, CheckboxControl, Notice } = wp.components;
   const { Fragment, createElement: el, useMemo } = wp.element;
   const { useSelect, useDispatch } = wp.data;
