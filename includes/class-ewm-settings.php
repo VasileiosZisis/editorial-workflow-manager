@@ -104,7 +104,7 @@ if (! class_exists('EWM_Settings')) {
             // Exclude our own CPT.
             unset($post_types['ewm_template']);
 
-            // Exclude Media (attachments).
+            // Exclude Media (attachments) – checklists for media items don't make sense.
             unset($post_types['attachment']);
 
             // Get all checklist templates.
@@ -120,6 +120,31 @@ if (! class_exists('EWM_Settings')) {
 ?>
             <div class="wrap">
                 <h1><?php esc_html_e('Editorial Workflow Settings', 'editorial-workflow-manager'); ?></h1>
+
+                <p>
+                    <?php esc_html_e('Use checklist templates to enforce a consistent review process before publishing content.', 'editorial-workflow-manager'); ?>
+                </p>
+
+                <div class="notice notice-info">
+                    <p><strong><?php esc_html_e('Getting started', 'editorial-workflow-manager'); ?></strong></p>
+                    <ol>
+                        <li>
+                            <?php
+                            printf(
+                                /* translators: %s: menu label "Checklist Templates" */
+                                esc_html__('Go to %s and create or edit checklist templates (or use the defaults).', 'editorial-workflow-manager'),
+                                '<em>' . esc_html__('Checklist Templates → Add New', 'editorial-workflow-manager') . '</em>'
+                            );
+                            ?>
+                        </li>
+                        <li>
+                            <?php esc_html_e('Return to this page and map each post type to a checklist template.', 'editorial-workflow-manager'); ?>
+                        </li>
+                        <li>
+                            <?php esc_html_e('Edit a post or page and open the “Editorial Checklist” sidebar in the block editor to see and tick off the checklist items.', 'editorial-workflow-manager'); ?>
+                        </li>
+                    </ol>
+                </div>
 
                 <form method="post" action="options.php">
                     <?php

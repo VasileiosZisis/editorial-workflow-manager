@@ -79,8 +79,13 @@ if (! class_exists('EWM_Plugin')) {
 
         public function on_plugins_loaded()
         {
-            // translations later
+            load_plugin_textdomain(
+                'editorial-workflow-manager',
+                false,
+                dirname(plugin_basename(__FILE__)) . '/languages'
+            );
         }
+
 
         public function on_init()
         {

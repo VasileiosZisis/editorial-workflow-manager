@@ -56,10 +56,21 @@ if (! class_exists('EWM_Default_Templates')) {
 
             foreach ($definitions as $title => $items) {
                 // Try to find an existing template with this title.
-                $existing = get_page_by_title($title, OBJECT, 'ewm_template');
+                $existing = get_posts(
+                    [
+                        'post_type'      => 'ewm_template',
+                        'title'          => $title,
+                        'post_status'    => 'any',
+                        'posts_per_page' => 1,
+                        'orderby'        => 'ID',
+                        'order'          => 'ASC',
+                        'fields'         => 'ids',
+                        'no_found_rows'  => true,
+                    ]
+                );
 
-                if ($existing) {
-                    $template_id = $existing->ID;
+                if (! empty($existing)) {
+                    $template_id = (int) $existing[0];
                 } else {
                     // Create a new template.
                     $template_id = wp_insert_post(
