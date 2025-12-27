@@ -56,6 +56,7 @@ if (! class_exists('EWM_Plugin')) {
             require_once EWM_PATH . 'includes/class-ewm-settings.php';
             require_once EWM_PATH . 'includes/class-ewm-meta.php';
             require_once EWM_PATH . 'includes/class-ewm-editor-assets.php';
+            require_once EWM_PATH . 'includes/class-ewm-default-templates.php';
 
             // Instantiate.
             $this->templates_cpt = new EWM_Templates_CPT();
@@ -97,6 +98,17 @@ function ewm()
 {
     return EWM_Plugin::instance();
 }
+
+/**
+ * Run on plugin activation: create default templates, etc.
+ */
+function ewm_activate()
+{
+    EWM_Default_Templates::create_on_activation();
+}
+
+register_activation_hook(__FILE__, 'ewm_activate');
+
 
 // Bootstrap the plugin.
 ewm();
