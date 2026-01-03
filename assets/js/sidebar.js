@@ -8,9 +8,9 @@
 
   const useChecklist = () => {
     const items =
-      window.EWM_CHECKLIST_DATA &&
-      Array.isArray(window.EWM_CHECKLIST_DATA.items)
-        ? window.EWM_CHECKLIST_DATA.items
+      window.EDIWORMAN_CHECKLIST_DATA &&
+      Array.isArray(window.EDIWORMAN_CHECKLIST_DATA.items)
+        ? window.EDIWORMAN_CHECKLIST_DATA.items
         : [];
 
     const meta = useSelect(
@@ -19,8 +19,9 @@
     );
 
     const checkedItems =
-      meta._ewm_checked_items && Array.isArray(meta._ewm_checked_items)
-        ? meta._ewm_checked_items
+      meta._ediworman_checked_items &&
+      Array.isArray(meta._ediworman_checked_items)
+        ? meta._ediworman_checked_items
         : [];
 
     const { editPost } = useDispatch('core/editor');
@@ -37,7 +38,7 @@
       editPost({
         meta: {
           ...meta,
-          _ewm_checked_items: Array.from(set),
+          _ediworman_checked_items: Array.from(set),
         },
       });
     };
@@ -129,13 +130,13 @@
       null,
       el(
         PluginSidebarMoreMenuItem,
-        { target: 'ewm-checklist-sidebar' },
+        { target: 'ediworman-checklist-sidebar' },
         'Editorial Checklist'
       ),
       el(
         PluginSidebar,
         {
-          name: 'ewm-checklist-sidebar',
+          name: 'ediworman-checklist-sidebar',
           title: 'Editorial Checklist',
           icon: 'yes-alt',
         },
@@ -144,7 +145,7 @@
       el(ChecklistStatusInfo, null)
     );
 
-  registerPlugin('ewm-checklist-plugin', {
+  registerPlugin('ediworman-checklist-plugin', {
     render: EditorialChecklistPlugin,
   });
 })();

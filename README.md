@@ -84,8 +84,8 @@ No publish blocking or approvals yet – those are planned for the Pro version.
 
 This plugin is built with:
 
-- A custom post type for checklist templates (`ewm_template`).
-- Post meta for checklist state (`_ewm_checked_items`).
+- A custom post type for checklist templates (`ediworman_template`).
+- Post meta for checklist state (`_ediworman_checked_items`).
 - A custom Gutenberg sidebar using the `wp.*` editor packages.
 
 Pull requests and feedback are welcome.

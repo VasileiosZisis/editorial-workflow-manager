@@ -5,7 +5,6 @@
  * Description: Add editorial checklists and approvals to the WordPress editor.
  * Version:     0.3.0
  * Author:      Vasileios Zisis
- * Author URI:  https://www.vasiliszisis.me/
  * Text Domain: editorial-workflow-manager
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -16,93 +15,75 @@
 if (! defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
+final class EDIWORMAN_Plugin
+{
 
-if (! class_exists('EWM_Plugin')) {
+    const VERSION = '0.3.0';
 
-    final class EWM_Plugin
+    private static $instance = null;
+
+    /** @var EDIWORMAN_Templates_CPT */
+    private $templates_cpt;
+
+    /** @var EDIWORMAN_Settings */
+    private $settings;
+
+    /** @var EDIWORMAN_Meta */
+    private $meta;
+
+    /** @var EDIWORMAN_Editor_Assets */
+    private $editor_assets;
+
+    public static function instance()
     {
-
-        const VERSION = '0.1.0';
-
-        private static $instance = null;
-
-        /** @var EWM_Templates_CPT */
-        private $templates_cpt;
-
-        /** @var EWM_Settings */
-        private $settings;
-
-        /** @var EWM_Meta */
-        private $meta;
-
-        /** @var EWM_Editor_Assets */
-        private $editor_assets;
-
-        public static function instance()
-        {
-            if (null === self::$instance) {
-                self::$instance = new self();
-            }
-
-            return self::$instance;
+        if (null === self::$instance) {
+            self::$instance = new self();
         }
 
-        private function __construct()
-        {
-            $this->define_constants();
+        return self::$instance;
+    }
 
-            // Load classes.
-            require_once EWM_PATH . 'includes/class-ewm-templates-cpt.php';
-            require_once EWM_PATH . 'includes/class-ewm-settings.php';
-            require_once EWM_PATH . 'includes/class-ewm-meta.php';
-            require_once EWM_PATH . 'includes/class-ewm-editor-assets.php';
-            require_once EWM_PATH . 'includes/class-ewm-default-templates.php';
+    private function __construct()
+    {
+        $this->define_constants();
 
-            // Instantiate.
-            $this->templates_cpt = new EWM_Templates_CPT();
-            $this->settings      = new EWM_Settings();
-            $this->meta          = new EWM_Meta();
-            $this->editor_assets = new EWM_Editor_Assets();
+        // Load classes.
+        require_once EDIWORMAN_PATH . 'includes/class-ediworman-templates-cpt.php';
+        require_once EDIWORMAN_PATH . 'includes/class-ediworman-settings.php';
+        require_once EDIWORMAN_PATH . 'includes/class-ediworman-meta.php';
+        require_once EDIWORMAN_PATH . 'includes/class-ediworman-editor-assets.php';
+        require_once EDIWORMAN_PATH . 'includes/class-ediworman-default-templates.php';
 
-            // Hooks.
-            add_action('init', [$this, 'on_init']);
-        }
+        // Instantiate.
+        $this->templates_cpt = new EDIWORMAN_Templates_CPT();
+        $this->settings      = new EDIWORMAN_Settings();
+        $this->meta          = new EDIWORMAN_Meta();
+        $this->editor_assets = new EDIWORMAN_Editor_Assets();
 
-        private function define_constants()
-        {
-            define('EWM_VERSION', self::VERSION);
-            define('EWM_FILE', __FILE__);
-            define('EWM_PATH', plugin_dir_path(__FILE__));
-            define('EWM_URL', plugin_dir_url(__FILE__));
-        }
+        // Hooks.
+        add_action('init', [$this, 'on_init']);
+    }
 
-        public function on_init()
-        {
-            // other init stuff later (if needed)
-        }
+    private function define_constants()
+    {
+        define('EDIWORMAN_VERSION', self::VERSION);
+        define('EDIWORMAN_FILE', __FILE__);
+        define('EDIWORMAN_PATH', plugin_dir_path(__FILE__));
+        define('EDIWORMAN_URL', plugin_dir_url(__FILE__));
+    }
+
+    public function on_init()
+    {
+        // other init stuff later (if needed)
+    }
+
+    public static function activate()
+    {
+        EDIWORMAN_Default_Templates::create_on_activation();
     }
 }
 
-/**
- * Helper function to get the plugin instance.
- *
- * @return EWM_Plugin
- */
-function ewm()
-{
-    return EWM_Plugin::instance();
-}
-
-/**
- * Run on plugin activation: create default templates, etc.
- */
-function ewm_activate()
-{
-    EWM_Default_Templates::create_on_activation();
-}
-
-register_activation_hook(__FILE__, 'ewm_activate');
-
+register_activation_hook(__FILE__, ['EDIWORMAN_Plugin', 'activate']);
 
 // Bootstrap the plugin.
-ewm();
+EDIWORMAN_Plugin::instance();

@@ -21,7 +21,7 @@ This first (free) version is designed with agencies and content teams in mind:
 * Tick items as you work using an **Editorial Checklist** sidebar in the editor.
 * See a soft status warning in the **Status & visibility** panel when the checklist is incomplete.
 
-No publish blocking or approvals yet – those are planned for the Pro version.
+No publish blocking or approvals in this free version. A separate Pro add-on is planned with those features.
 
 ### Key features
 
