@@ -5,6 +5,7 @@
  * Description: Add editorial checklists and approvals to the WordPress editor.
  * Version:     0.3.0
  * Author:      Vasileios Zisis
+ * Author URI:  https://profiles.wordpress.org/vzisis/
  * Text Domain: editorial-workflow-manager
  * Requires at least: 6.0
  * Requires PHP: 7.4

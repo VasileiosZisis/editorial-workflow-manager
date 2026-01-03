@@ -140,6 +140,9 @@ class EDIWORMAN_Settings
                     <li>
                         <?php esc_html_e('Edit a post or page and open the “Editorial Checklist” sidebar in the block editor to see and tick off the checklist items.', 'editorial-workflow-manager'); ?>
                     </li>
+                    <li>
+                        <?php esc_html_e('If you delete a checklist template, come back here to assign a new template to any post types that were using it.', 'editorial-workflow-manager'); ?>
+                    </li>
                 </ol>
             </div>
 
@@ -210,16 +213,36 @@ class EDIWORMAN_Settings
     /**
      * Helper: get template ID for a given post type.
      *
+     * Returns null if no valid template exists anymore (e.g. deleted or trashed).
+     *
      * @param string $post_type
      * @return int|null
      */
     public static function get_template_for_post_type($post_type)
     {
         $settings = get_option(self::OPTION_NAME, []);
-        if (! empty($settings['post_type_templates'][$post_type])) {
-            return (int) $settings['post_type_templates'][$post_type];
+
+        if (empty($settings['post_type_templates'][$post_type])) {
+            return null;
         }
 
-        return null;
+        $template_id = (int) $settings['post_type_templates'][$post_type];
+        if ($template_id <= 0) {
+            return null;
+        }
+
+        $template = get_post($template_id);
+
+        // If the template is gone or not our CPT, treat as no template.
+        if (! $template || $template->post_type !== 'ediworman_template') {
+            return null;
+        }
+
+        // If it's in trash, also treat as no template.
+        if ($template->post_status === 'trash') {
+            return null;
+        }
+
+        return $template_id;
     }
 }
