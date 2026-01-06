@@ -89,9 +89,9 @@ Yes. The plugin is translation-ready. The text domain is `editorial-workflow-man
 == Screenshots ==
 
 1. Checklist templates in the admin area.
-2. Mapping post types to checklist templates in **Settings → Editorial Workflow**.
-3. The “Editorial Checklist” sidebar in the block editor.
-4. Checklist status text in the “Status & visibility” panel.
+2. Template edit screen.
+3. Mapping post types to checklist templates in **Settings → Editorial Workflow**.
+4. The “Editorial Checklist” sidebar in the block editor.
 
 == Changelog ==
 
