@@ -4,7 +4,7 @@ Tags: editorial, workflow, checklist, content, publishing
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,9 +33,12 @@ No publish blocking or approvals in this free version. A separate Pro add-on is 
   * Blog Post SOP
   * Landing Page QA
   * Announcement / News Post
-* **Soft status notice** – in “Status & visibility”:
-  * `Checklist: X / Y items done` while items are incomplete.
-  * `Checklist complete.` once everything is ticked.
+* **Soft status notice and pre-publish warning** –
+  * In “Status & visibility”:
+    * `Checklist: X / Y items done` while items are incomplete.
+    * `Checklist complete.` once everything is ticked.
+  * In the pre-publish panel:
+    * Non-blocking warning if the checklist is incomplete when you click Publish.
 * **Translation-ready** – text domain `editorial-workflow-manager` and `/languages` directory.
 
 This plugin does not add any front-end output. Everything is editor/admin only.
@@ -68,7 +71,7 @@ This plugin does not add any front-end output. Everything is editor/admin only.
 
 = Does this plugin block publishing if the checklist is incomplete? =
 
-Not in the free version. The free version only shows a **soft warning** (status text) and the checklist in the sidebar. Hard publish blocking and approval workflows are planned for the Pro version.
+Not in the free version. The free version shows a **soft warning** in the editor: a status line and a **non-blocking pre-publish notice** if the checklist is incomplete. You can still publish. Hard publish blocking and approval workflows are planned for the Pro version.
 
 = Does this plugin change anything on the front end of my site? =
 
@@ -94,6 +97,9 @@ Yes. The plugin is translation-ready. The text domain is `editorial-workflow-man
 4. The “Editorial Checklist” sidebar in the block editor.
 
 == Changelog ==
+
+= 0.3.1 =
+* Added non-blocking pre-publish checklist warning when checklists are incomplete.
 
 = 0.3.0 =
 * First public release.

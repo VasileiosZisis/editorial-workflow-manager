@@ -16,9 +16,12 @@ This is the free (Lite) version focused on agencies managing client blogs and ma
   - Blog Post SOP
   - Landing Page QA
   - Announcement / News Post
-- ✅ **Soft status warning** – in “Status & visibility” you see:
-  - `Checklist: X / Y items done` (in red when incomplete)
-  - `Checklist complete.` when everything is ticked.
+- ✅ **Soft status warning** – in “Status & visibility” and the pre-publish panel:
+
+  - `Checklist: X / Y items done` while items are incomplete.
+  - `Checklist complete.` once everything is ticked.
+  - Non-blocking warning in the pre-publish panel if you try to publish with an incomplete checklist.
+
 - ✅ **Translation-ready** – text domain `editorial-workflow-manager` and `/languages` folder.
 
 No publish blocking or approvals yet – those are planned for the Pro version.
