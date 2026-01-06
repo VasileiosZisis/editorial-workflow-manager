@@ -1,7 +1,11 @@
 (function () {
   const { registerPlugin } = wp.plugins;
-  const { PluginSidebar, PluginSidebarMoreMenuItem, PluginPostStatusInfo } =
-    wp.editor;
+  const {
+    PluginSidebar,
+    PluginSidebarMoreMenuItem,
+    PluginPostStatusInfo,
+    PluginPrePublishPanel,
+  } = wp.editPost;
   const { PanelBody, CheckboxControl, Notice } = wp.components;
   const { Fragment, createElement: el, useMemo } = wp.element;
   const { useSelect, useDispatch } = wp.data;
@@ -96,7 +100,7 @@
     );
   };
 
-  // This adds a little info line inside "Status & visibility"
+  // Status line in "Status & visibility"
   const ChecklistStatusInfo = () => {
     const { items, total, completed, allDone } = useChecklist();
 
@@ -124,6 +128,32 @@
     );
   };
 
+  // Non-blocking notice in the pre-publish panel
+  const ChecklistPrePublishPanel = () => {
+    const { items, total, completed, allDone } = useChecklist();
+
+    // Only show when there is a template and the checklist is incomplete.
+    if (!items.length || allDone) {
+      return null;
+    }
+
+    return el(
+      PluginPrePublishPanel,
+      {
+        title: 'Editorial Checklist',
+        initialOpen: true,
+      },
+      el(
+        Notice,
+        {
+          status: 'warning',
+          isDismissible: false,
+        },
+        `Checklist incomplete: ${completed} / ${total} items done. You can still publish, but consider reviewing the checklist first.`
+      )
+    );
+  };
+
   const EditorialChecklistPlugin = () =>
     el(
       Fragment,
@@ -142,7 +172,8 @@
         },
         el(SidebarContent, null)
       ),
-      el(ChecklistStatusInfo, null)
+      el(ChecklistStatusInfo, null),
+      el(ChecklistPrePublishPanel, null)
     );
 
   registerPlugin('ediworman-checklist-plugin', {
