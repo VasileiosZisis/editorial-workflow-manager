@@ -22,6 +22,8 @@ This is the free (Lite) version focused on agencies managing client blogs and ma
   - `Checklist complete.` once everything is ticked.
   - Non-blocking warning in the pre-publish panel if you try to publish with an incomplete checklist.
 
+- ✅ **Tiny activity hint** – the checklist sidebar shows “Last updated by X on [date/time]”, based on the last saved edit.
+
 - ✅ **Translation-ready** – text domain `editorial-workflow-manager` and `/languages` folder.
 
 No publish blocking or approvals yet – those are planned for the Pro version.

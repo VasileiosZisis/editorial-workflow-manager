@@ -39,6 +39,7 @@ No publish blocking or approvals in this free version. A separate Pro add-on is 
     * `Checklist complete.` once everything is ticked.
   * In the pre-publish panel:
     * Non-blocking warning if the checklist is incomplete when you click Publish.
+* **Tiny activity hint** – the checklist sidebar shows “Last updated by X on [date/time]”, based on the last saved edit.
 * **Translation-ready** – text domain `editorial-workflow-manager` and `/languages` directory.
 
 This plugin does not add any front-end output. Everything is editor/admin only.
@@ -66,6 +67,7 @@ This plugin does not add any front-end output. Everything is editor/admin only.
 4. In the **Status & visibility** panel  
    * See `Checklist: X / Y items done` when items are incomplete.  
    * See `Checklist complete.` when all items are ticked.
+   * The checklist sidebar shows “Last updated by X on date/time”, based on the last saved edit.
 
 == Frequently Asked Questions ==
 
@@ -100,6 +102,7 @@ Yes. The plugin is translation-ready. The text domain is `editorial-workflow-man
 
 = 0.3.1 =
 * Added non-blocking pre-publish checklist warning when checklists are incomplete.
+* Added tiny activity hint in the checklist sidebar (“Last updated by X on date/time”).
 
 = 0.3.0 =
 * First public release.

@@ -32,6 +32,7 @@ class EDIWORMAN_Editor_Assets
                 'wp-element',
                 'wp-components',
                 'wp-data',
+                'wp-core-data',
             ],
             EDIWORMAN_VERSION,
             true

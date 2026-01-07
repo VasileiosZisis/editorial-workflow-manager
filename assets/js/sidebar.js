@@ -5,7 +5,7 @@
     PluginSidebarMoreMenuItem,
     PluginPostStatusInfo,
     PluginPrePublishPanel,
-  } = wp.editPost;
+  } = wp.editor;
   const { PanelBody, CheckboxControl, Notice } = wp.components;
   const { Fragment, createElement: el, useMemo } = wp.element;
   const { useSelect, useDispatch } = wp.data;
@@ -64,8 +64,65 @@
     };
   };
 
+  const usePostInfo = () => {
+    const meta = useSelect(
+      (select) => select('core/editor').getEditedPostAttribute('meta') || {},
+      []
+    );
+
+    let lastEditorId = null;
+
+    if (
+      meta._ediworman_last_editor !== undefined &&
+      meta._ediworman_last_editor !== null
+    ) {
+      const parsed = parseInt(meta._ediworman_last_editor, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lastEditorId = parsed;
+      }
+    }
+
+    const post = useSelect(
+      (select) => select('core/editor').getCurrentPost(),
+      []
+    );
+
+    const fallbackAuthorId = post && post.author ? post.author : null;
+    const userIdToShow = lastEditorId || fallbackAuthorId;
+
+    const user = useSelect(
+      (select) => {
+        if (!userIdToShow) {
+          return null;
+        }
+        return select('core').getUser(userIdToShow);
+      },
+      [userIdToShow]
+    );
+
+    // Build the "when" part from post.modified
+    let lastUpdatedTimeText = null;
+    if (post && post.modified) {
+      const d = new Date(post.modified);
+      if (!Number.isNaN(d.getTime())) {
+        lastUpdatedTimeText = d.toLocaleString();
+      }
+    }
+
+    if (!user || !user.name) {
+      return { lastUpdatedText: null, lastUpdatedTimeText: null };
+    }
+
+    return {
+      lastUpdatedText: `Last updated by ${user.name}`,
+      lastUpdatedTimeText,
+    };
+  };
+
   const SidebarContent = () => {
     const { items, checkedItems, allDone, toggleItem } = useChecklist();
+
+    const { lastUpdatedText, lastUpdatedTimeText } = usePostInfo();
 
     if (!items.length) {
       return el(
@@ -96,7 +153,21 @@
           checked: checkedItems.includes(label),
           onChange: () => toggleItem(label),
         })
-      )
+      ),
+      lastUpdatedText &&
+        el(
+          'p',
+          {
+            style: {
+              marginTop: '12px',
+              fontSize: '12px',
+              opacity: 0.7,
+            },
+          },
+          lastUpdatedTimeText
+            ? `${lastUpdatedText} on ${lastUpdatedTimeText}`
+            : lastUpdatedText
+        )
     );
   };
 
