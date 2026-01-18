@@ -51,21 +51,32 @@ function ediworman_uninstall_cleanup_site()
     } while (! empty($template_ids));
 }
 
-if (is_multisite()) {
-    $sites = get_sites(
-        [
-            'fields' => 'ids',
-        ]
-    );
+/**
+ * Run uninstall for single-site or multisite.
+ *
+ * @return void
+ */
+function ediworman_uninstall()
+{
+    if (is_multisite()) {
+        $ediworman_site_ids = get_sites(
+            [
+                'fields' => 'ids',
+            ]
+        );
 
-    foreach ($sites as $site_id) {
-        switch_to_blog((int) $site_id);
-        ediworman_uninstall_cleanup_site();
-        restore_current_blog();
+        foreach ($ediworman_site_ids as $ediworman_site_id) {
+            switch_to_blog((int) $ediworman_site_id);
+            ediworman_uninstall_cleanup_site();
+            restore_current_blog();
+        }
+
+        // In case anything was stored at network level in the future.
+        delete_site_option('ediworman_settings');
+        return;
     }
 
-    // In case anything was stored at network level in the future.
-    delete_site_option('ediworman_settings');
-} else {
     ediworman_uninstall_cleanup_site();
 }
+
+ediworman_uninstall();
