@@ -4,7 +4,7 @@ Tags: editorial, workflow, checklist, content, publishing
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.3.1
+Stable tag: 0.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -100,6 +100,9 @@ Yes. The plugin is translation-ready. The text domain is `editorial-workflow-man
 
 == Changelog ==
 
+= 0.3.2 =
+* Added uninstall.php cleanup to remove plugin data when the plugin is deleted.
+
 = 0.3.1 =
 * Added non-blocking pre-publish checklist warning when checklists are incomplete.
 * Added tiny activity hint in the checklist sidebar (“Last updated by X on date/time”).
@@ -115,6 +118,9 @@ Yes. The plugin is translation-ready. The text domain is `editorial-workflow-man
 * Translation-ready setup.
 
 == Upgrade Notice ==
+
+= 0.3.2 =
+Adds uninstall.php cleanup to remove plugin data when the plugin is deleted.
 
 = 0.3.0 =
 First public release of Editorial Workflow Manager. Includes checklist templates, per-post checklists, a Gutenberg sidebar, default templates on activation, and soft status warnings in the editor.
