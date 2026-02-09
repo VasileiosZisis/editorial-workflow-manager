@@ -63,13 +63,37 @@ class EDIWORMAN_Settings
 
         $output['post_type_templates'] = [];
 
+        if (! is_array($input)) {
+            return $output;
+        }
+
         if (! empty($input['post_type_templates']) && is_array($input['post_type_templates'])) {
             foreach ($input['post_type_templates'] as $post_type => $template_id) {
                 $post_type = sanitize_key($post_type);
-                $template_id = (int) $template_id;
+                $template_id = absint($template_id);
+
+                if (! $post_type || ! post_type_exists($post_type)) {
+                    continue;
+                }
+
+                // Prevent assigning our own CPT or attachments.
+                if ($post_type === 'ediworman_template' || $post_type === 'attachment') {
+                    continue;
+                }
 
                 if ($template_id > 0) {
-                    $output['post_type_templates'][$post_type] = $template_id;
+                    $template = get_post($template_id);
+
+                    if (! $template || $template->post_type !== 'ediworman_template') {
+                        continue;
+                    }
+
+                    // If it's in trash, ignore the mapping.
+                    if ($template->post_status === 'trash') {
+                        continue;
+                    }
+
+                    $output['post_type_templates'][$post_type] = (int) $template_id;
                 }
             }
         }
@@ -86,7 +110,11 @@ class EDIWORMAN_Settings
             return;
         }
 
-        $settings   = get_option(self::OPTION_NAME, []);
+        $settings = get_option(self::OPTION_NAME, []);
+        if (! is_array($settings)) {
+            $settings = [];
+        }
+
         $mappings   = isset($settings['post_type_templates']) ? $settings['post_type_templates'] : [];
 
         // Get public post types that have UI.
@@ -220,7 +248,15 @@ class EDIWORMAN_Settings
      */
     public static function get_template_for_post_type($post_type)
     {
+        $post_type = sanitize_key($post_type);
+        if (! $post_type || ! post_type_exists($post_type)) {
+            return null;
+        }
+
         $settings = get_option(self::OPTION_NAME, []);
+        if (! is_array($settings)) {
+            $settings = [];
+        }
 
         if (empty($settings['post_type_templates'][$post_type])) {
             return null;

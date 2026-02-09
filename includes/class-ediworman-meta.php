@@ -20,6 +20,42 @@ if (! class_exists('EDIWORMAN')) {
         }
 
         /**
+         * Sanitize the checked items meta.
+         *
+         * @param mixed  $value
+         * @param string $meta_key
+         * @param string $object_type
+         * @return array
+         */
+        public function sanitize_checked_items($value, $meta_key, $object_type)
+        {
+            if (! is_array($value)) {
+                if (is_string($value) && $value !== '') {
+                    $value = [$value];
+                } else {
+                    return [];
+                }
+            }
+
+            $sanitized = [];
+
+            foreach ($value as $item) {
+                if (! is_scalar($item)) {
+                    continue;
+                }
+
+                $label = sanitize_text_field(wp_unslash((string) $item));
+                if ($label === '') {
+                    continue;
+                }
+
+                $sanitized[] = $label;
+            }
+
+            return array_values(array_unique($sanitized));
+        }
+
+        /**
          * Register post meta used by the plugin.
          *
          * - _ediworman_checked_items: array of checklist item labels that are checked.
@@ -44,8 +80,14 @@ if (! class_exists('EDIWORMAN')) {
                             ],
                         ],
                     ],
-                    'auth_callback' => function () {
-                        return current_user_can('edit_posts');
+                    'sanitize_callback' => [$this, 'sanitize_checked_items'],
+                    'auth_callback' => static function ($allowed, $meta_key, $post_id, $user_id = 0, $cap = '', $caps = []) {
+                        $post_id = (int) $post_id;
+                        if ($post_id <= 0) {
+                            return false;
+                        }
+
+                        return current_user_can('edit_post', $post_id);
                     },
                 ]
             );
@@ -59,8 +101,14 @@ if (! class_exists('EDIWORMAN')) {
                     'type'         => 'integer',
                     'default'      => 0,
                     'show_in_rest' => true,
-                    'auth_callback' => function () {
-                        return current_user_can('edit_posts');
+                    'sanitize_callback' => 'absint',
+                    'auth_callback' => static function ($allowed, $meta_key, $post_id, $user_id = 0, $cap = '', $caps = []) {
+                        $post_id = (int) $post_id;
+                        if ($post_id <= 0) {
+                            return false;
+                        }
+
+                        return current_user_can('edit_post', $post_id);
                     },
                 ]
             );

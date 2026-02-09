@@ -4,7 +4,7 @@ Tags: editorial, workflow, checklist, content, publishing
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.3.3
+Stable tag: 0.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,9 @@ Yes. The plugin is translation-ready. The text domain is `editorial-workflow-man
 4. The “Editorial Checklist” sidebar in the block editor.
 
 == Changelog ==
+
+= 0.3.4 =
+* Various security improvements (Better data validation and sanitization).
 
 = 0.3.3 =
 * Small syntax fix in uninstall.php.

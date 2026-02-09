@@ -14,18 +14,20 @@
     const items =
       window.EDIWORMAN_CHECKLIST_DATA &&
       Array.isArray(window.EDIWORMAN_CHECKLIST_DATA.items)
-        ? window.EDIWORMAN_CHECKLIST_DATA.items
+        ? window.EDIWORMAN_CHECKLIST_DATA.items.filter(
+            (i) => typeof i === 'string',
+          )
         : [];
 
     const meta = useSelect(
       (select) => select('core/editor').getEditedPostAttribute('meta') || {},
-      []
+      [],
     );
 
     const checkedItems =
       meta._ediworman_checked_items &&
       Array.isArray(meta._ediworman_checked_items)
-        ? meta._ediworman_checked_items
+        ? meta._ediworman_checked_items.filter((i) => typeof i === 'string')
         : [];
 
     const { editPost } = useDispatch('core/editor');
@@ -50,7 +52,7 @@
     const total = items.length;
     const completed = useMemo(
       () => items.filter((label) => checkedItems.includes(label)).length,
-      [items, checkedItems]
+      [items, checkedItems],
     );
     const allDone = total > 0 && completed === total;
 
@@ -67,7 +69,7 @@
   const usePostInfo = () => {
     const meta = useSelect(
       (select) => select('core/editor').getEditedPostAttribute('meta') || {},
-      []
+      [],
     );
 
     let lastEditorId = null;
@@ -84,7 +86,7 @@
 
     const post = useSelect(
       (select) => select('core/editor').getCurrentPost(),
-      []
+      [],
     );
 
     const fallbackAuthorId = post && post.author ? post.author : null;
@@ -97,7 +99,7 @@
         }
         return select('core').getUser(userIdToShow);
       },
-      [userIdToShow]
+      [userIdToShow],
     );
 
     // Build the "when" part from post.modified
@@ -131,8 +133,8 @@
         el(
           Notice,
           { status: 'info', isDismissible: false },
-          'No checklist template is configured for this post type.'
-        )
+          'No checklist template is configured for this post type.',
+        ),
       );
     }
 
@@ -144,7 +146,7 @@
         null,
         allDone
           ? '✅ All checklist items are complete.'
-          : 'Tick each item as you complete it.'
+          : 'Tick each item as you complete it.',
       ),
       items.map((label) =>
         el(CheckboxControl, {
@@ -152,7 +154,7 @@
           label,
           checked: checkedItems.includes(label),
           onChange: () => toggleItem(label),
-        })
+        }),
       ),
       lastUpdatedText &&
         el(
@@ -166,8 +168,8 @@
           },
           lastUpdatedTimeText
             ? `${lastUpdatedText} on ${lastUpdatedTimeText}`
-            : lastUpdatedText
-        )
+            : lastUpdatedText,
+        ),
     );
   };
 
@@ -194,8 +196,8 @@
             ? { color: 'inherit' }
             : { color: '#d63638', fontWeight: '500' }, // subtle red when incomplete
         },
-        text
-      )
+        text,
+      ),
     );
   };
 
@@ -220,8 +222,8 @@
           status: 'warning',
           isDismissible: false,
         },
-        `Checklist incomplete: ${completed} / ${total} items done. You can still publish, but consider reviewing the checklist first.`
-      )
+        `Checklist incomplete: ${completed} / ${total} items done. You can still publish, but consider reviewing the checklist first.`,
+      ),
     );
   };
 
@@ -232,7 +234,7 @@
       el(
         PluginSidebarMoreMenuItem,
         { target: 'ediworman-checklist-sidebar' },
-        'Editorial Checklist'
+        'Editorial Checklist',
       ),
       el(
         PluginSidebar,
@@ -241,10 +243,10 @@
           title: 'Editorial Checklist',
           icon: 'yes-alt',
         },
-        el(SidebarContent, null)
+        el(SidebarContent, null),
       ),
       el(ChecklistStatusInfo, null),
-      el(ChecklistPrePublishPanel, null)
+      el(ChecklistPrePublishPanel, null),
     );
 
   registerPlugin('ediworman-checklist-plugin', {

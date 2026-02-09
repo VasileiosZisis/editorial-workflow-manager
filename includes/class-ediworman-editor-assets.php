@@ -50,7 +50,11 @@ class EDIWORMAN_Editor_Assets
             return;
         }
 
-        $post_type   = $screen->post_type;
+        $post_type = sanitize_key($screen->post_type);
+        if (! $post_type || ! post_type_exists($post_type)) {
+            return;
+        }
+
         $template_id = null;
         $items       = [];
 
@@ -59,9 +63,15 @@ class EDIWORMAN_Editor_Assets
         }
 
         if ($template_id) {
+            $template_id = absint($template_id);
             $stored_items = get_post_meta($template_id, '_ediworman_items', true);
             if (is_array($stored_items)) {
-                $items = array_values($stored_items);
+                $items = array_values(
+                    array_filter(
+                        array_map('sanitize_text_field', $stored_items),
+                        'strlen'
+                    )
+                );
             }
         }
 
