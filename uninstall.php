@@ -25,10 +25,12 @@ function ediworman_uninstall_cleanup_site() {
 
 	// Remove post meta stored on edited content.
 	delete_post_meta_by_key( '_ediworman_checked_items' );
+	delete_post_meta_by_key( '_ediworman_checked_item_ids' );
 	delete_post_meta_by_key( '_ediworman_last_editor' );
 
 	// Remove checklist template item meta (in case templates are left behind).
 	delete_post_meta_by_key( '_ediworman_items' );
+	delete_post_meta_by_key( '_ediworman_items_v2' );
 
 	// Delete checklist templates CPT posts.
 	$limit = 100;
