@@ -8,7 +8,7 @@ Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Editorial checklist and pre-publish workflow for the WordPress block editor (Gutenberg). Create reusable checklists with required/optional items and get clear readiness feedback before publishing.
+Editorial checklist and pre-publish workflow for the WordPress editor. Create reusable checklists and get clear readiness feedback before publishing.
 
 == Description ==
 
