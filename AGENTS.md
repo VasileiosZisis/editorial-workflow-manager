@@ -1,6 +1,7 @@
 # AGENTS.md — Rules for building WordPress plugins (WordPress.org directory compatible)
 
-These rules apply to ALL files in this repository.
+These rules apply to ALL files in this repository. For WordPress task workflows, consult local skills under .agents/skills. If a skill conflicts with this repo’s AGENTS.md, AGENTS.md wins.
+IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any WordPress tasks.
 
 ## WordPress.org Plugin Directory compliance (must-follow)
 
@@ -83,8 +84,17 @@ These rules apply to ALL files in this repository.
 
 15. Trademarks and naming
 
+- Do NOT use the restricted term "WordPress" in the plugin name.
 - Respect trademarks/copyrights/project names.
+- Do NOT use restricted/trademarked terms in the plugin name (example: "Gutenberg"). If a term is flagged as restricted, it cannot appear anywhere in the plugin name.
 - Do not use protected product names as the leading term in slugs/names without permission/ownership.
+
+## Internationalization naming rules (i18n)
+
+- The plugin text domain MUST match the plugin slug (the plugin folder name / WordPress.org slug). :contentReference[oaicite:0]{index=0}
+- The text domain MUST be lowercase, use dashes (not underscores), and contain no spaces. :contentReference[oaicite:1]{index=1}
+- Add `Text Domain: your-slug` to the plugin header (recommended for clarity; optional since WordPress 4.6). :contentReference[oaicite:2]{index=2}
+- If you ship translations inside the plugin (e.g., `/languages`), set `Domain Path: /languages` in the plugin header. :contentReference[oaicite:3]{index=3}
 
 ## Uniqueness rule: names must be globally distinct (avoid conflicts)
 

@@ -1,10 +1,10 @@
-=== Editorial Workflow Manager – Editorial Checklist for Gutenberg ===
+=== Editorial Workflow Manager ===
 Contributors: vzisis
 Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
-Tested up to: 6.9.1
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -92,6 +92,11 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 
 == Changelog ==
 
+= 0.5.0 =
+* Changed Checklist Template permissions to use WordPress page capabilities.
+* Only Editors and Administrators can now manage Checklist Templates by default; Authors and Contributors may lose access.
+* Added a one-time admin notice after update to warn site owners about the capability change.
+
 = 0.4.0 =
 * Added Required vs Optional checklist items.
 * Added clearer readiness/progress indicators across the sidebar, post status panel, and pre-publish panel.
@@ -117,6 +122,9 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 * First public release.
 
 == Upgrade Notice ==
+
+= 0.5.0 =
+Checklist Template permissions are now limited to roles with page-management capabilities. By default, this means Editors and Administrators can manage templates, while Authors and Contributors may lose access after updating.
 
 = 0.4.0 =
 Introduces Required vs Optional checklist items, clearer readiness indicators, and an improved template editor. Legacy templates continue to work; saving a legacy template upgrades it to UUID-based v2 items for more stable tracking.

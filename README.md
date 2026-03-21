@@ -5,6 +5,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 ## Free Version Features
 
 - Reusable checklist templates (`ediworman_template` CPT).
+- Checklist Template management is limited to users with page-management capabilities by default (typically Editors and Administrators).
 - Row-based template editor with add/remove/reorder controls.
 - Required and optional checklist items.
 - Per-post checklist state in Gutenberg.
@@ -37,5 +38,6 @@ Legacy templates remain supported. When a legacy template is edited/saved in the
 
 - Free version does not hard-block publishing.
 - No front-end output; behavior is admin/editor only.
+- By default, only Editors and Administrators can create, edit, or delete Checklist Templates.
 - Built for block editor (Gutenberg), not Classic Editor.
 - Readiness depends on required items only; optional items do not block completion.

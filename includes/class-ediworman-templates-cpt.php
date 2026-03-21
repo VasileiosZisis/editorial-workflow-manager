@@ -63,7 +63,8 @@ class EDIWORMAN_Templates_CPT {
 			'has_archive'         => false,
 			'rewrite'             => false,
 			'supports'            => array( 'title' ),
-			'capability_type'     => 'post',
+			'capability_type'     => 'page',
+			'map_meta_cap'        => true,
 		);
 
 		register_post_type( 'ediworman_template', $args );
