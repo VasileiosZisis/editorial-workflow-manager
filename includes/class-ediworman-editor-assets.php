@@ -20,15 +20,15 @@ class EDIWORMAN_Editor_Assets {
 	 * @return void
 	 */
 	public function __construct() {
-		// This hook only runs in the block editor.
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue' ) );
 	}
 
 	/**
 	 * Enqueue the sidebar JavaScript and pass checklist data to it.
+	 *
+	 * @return void
 	 */
 	public function enqueue() {
-		// Always enqueue the JS in the block editor.
 		wp_enqueue_script(
 			'ediworman-sidebar',
 			EDIWORMAN_URL . 'assets/js/sidebar.js',
@@ -44,18 +44,16 @@ class EDIWORMAN_Editor_Assets {
 			EDIWORMAN_VERSION,
 			true
 		);
+
 		if ( function_exists( 'wp_set_script_translations' ) ) {
 			wp_set_script_translations( 'ediworman-sidebar', 'editorial-workflow-manager', EDIWORMAN_PATH . 'languages' );
 		}
 
-		// Try to detect the current post type.
 		if ( ! function_exists( 'get_current_screen' ) ) {
 			return;
 		}
 
 		$screen = get_current_screen();
-
-		// We only care about actual post editing screens.
 		if ( ! $screen || empty( $screen->post_type ) || 'post' !== $screen->base ) {
 			return;
 		}
@@ -85,7 +83,6 @@ class EDIWORMAN_Editor_Assets {
 			}
 		}
 
-		// Pass data to JS (even if items is empty).
 		wp_localize_script(
 			'ediworman-sidebar',
 			'EDIWORMAN_CHECKLIST_DATA',
@@ -96,6 +93,56 @@ class EDIWORMAN_Editor_Assets {
 				'items'        => $items,
 			)
 		);
+
+		if ( ! $template_id || ! $this->is_editor_tour_request() || EDIWORMAN_Onboarding::has_user_dismissed_editor_tour() ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'ediworman-sidebar-tour',
+			EDIWORMAN_URL . 'assets/css/sidebar-tour.css',
+			array(),
+			EDIWORMAN_VERSION
+		);
+
+		wp_enqueue_script(
+			'ediworman-sidebar-tour',
+			EDIWORMAN_URL . 'assets/js/sidebar-tour.js',
+			array(
+				'ediworman-sidebar',
+				'wp-plugins',
+				'wp-edit-post',
+				'wp-element',
+				'wp-i18n',
+				'wp-components',
+				'wp-data',
+			),
+			EDIWORMAN_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'ediworman-sidebar-tour',
+			'EDIWORMAN_EDITOR_TOUR_DATA',
+			EDIWORMAN_Onboarding::get_editor_tour_script_data()
+		);
+	}
+
+	/**
+	 * Return whether the current request explicitly asks for the onboarding tour.
+	 *
+	 * @return bool
+	 */
+	private function is_editor_tour_request() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only query arg that controls whether tour assets load.
+		$tour_flag = isset( $_GET['ediworman_tour'] )
+			? sanitize_text_field(
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only query arg that controls whether tour assets load.
+				wp_unslash( $_GET['ediworman_tour'] )
+			)
+			: '';
+
+		return '1' === $tour_flag;
 	}
 
 	/**

@@ -31,6 +31,8 @@ class EDIWORMAN_Settings {
 
 	/**
 	 * Add a settings page under "Settings".
+	 *
+	 * @return void
 	 */
 	public function register_menu() {
 		add_options_page(
@@ -44,6 +46,8 @@ class EDIWORMAN_Settings {
 
 	/**
 	 * Register the settings.
+	 *
+	 * @return void
 	 */
 	public function register_settings() {
 		register_setting(
@@ -64,50 +68,28 @@ class EDIWORMAN_Settings {
 	 * @return array
 	 */
 	public function sanitize_settings( $input ) {
-		$output = array();
-
-		$output['post_type_templates'] = array();
-
 		if ( ! is_array( $input ) ) {
-			return $output;
+			return array(
+				'post_type_templates' => array(),
+			);
 		}
 
-		if ( ! empty( $input['post_type_templates'] ) && is_array( $input['post_type_templates'] ) ) {
-			foreach ( $input['post_type_templates'] as $post_type => $template_id ) {
-				$post_type   = sanitize_key( $post_type );
-				$template_id = absint( $template_id );
+		$raw_mappings = isset( $input['post_type_templates'] ) && is_array( $input['post_type_templates'] )
+			? $input['post_type_templates']
+			: array();
 
-				if ( ! $post_type || ! post_type_exists( $post_type ) ) {
-					continue;
-				}
-
-				// Prevent assigning our own CPT or attachments.
-				if ( 'ediworman_template' === $post_type || 'attachment' === $post_type ) {
-					continue;
-				}
-
-				if ( $template_id > 0 ) {
-					$template = get_post( $template_id );
-
-					if ( ! $template || 'ediworman_template' !== $template->post_type ) {
-						continue;
-					}
-
-					// If it's in trash, ignore the mapping.
-					if ( 'trash' === $template->post_status ) {
-						continue;
-					}
-
-					$output['post_type_templates'][ $post_type ] = (int) $template_id;
-				}
-			}
-		}
-
-		return $output;
+		return array(
+			'post_type_templates' => self::sanitize_post_type_template_mappings(
+				$raw_mappings,
+				array_keys( self::get_settings_post_types() )
+			),
+		);
 	}
 
 	/**
 	 * Render the settings page.
+	 *
+	 * @return void
 	 */
 	public function render_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -119,33 +101,9 @@ class EDIWORMAN_Settings {
 			$settings = array();
 		}
 
-		$mappings = isset( $settings['post_type_templates'] ) ? $settings['post_type_templates'] : array();
-
-		// Get public post types that have UI.
-		$post_types = get_post_types(
-			array(
-				'show_ui' => true,
-				'public'  => true,
-			),
-			'objects'
-		);
-
-		// Exclude our own CPT.
-		unset( $post_types['ediworman_template'] );
-
-		// Exclude Media (attachments) – checklists for media items don't make sense.
-		unset( $post_types['attachment'] );
-
-		// Get all checklist templates.
-		$templates = get_posts(
-			array(
-				'post_type'      => 'ediworman_template',
-				'post_status'    => 'any',
-				'posts_per_page' => -1,
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-			)
-		);
+		$mappings   = isset( $settings['post_type_templates'] ) ? $settings['post_type_templates'] : array();
+		$post_types = self::get_settings_post_types();
+		$templates  = self::get_templates();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Editorial Workflow Settings', 'editorial-workflow-manager' ); ?></h1>
@@ -160,9 +118,9 @@ class EDIWORMAN_Settings {
 					<li>
 						<?php
 						printf(
-							/* translators: %s: menu label "Checklist Templates" */
+							/* translators: %s: menu label */
 							esc_html__( 'Go to %s and create or edit checklist templates (or use the defaults).', 'editorial-workflow-manager' ),
-							'<em>' . esc_html__( 'Checklist Templates → Add New', 'editorial-workflow-manager' ) . '</em>'
+							'<em>' . esc_html__( 'Checklist Templates -> Add New', 'editorial-workflow-manager' ) . '</em>'
 						);
 						?>
 					</li>
@@ -170,7 +128,7 @@ class EDIWORMAN_Settings {
 						<?php esc_html_e( 'Return to this page and map each post type to a checklist template.', 'editorial-workflow-manager' ); ?>
 					</li>
 					<li>
-						<?php esc_html_e( 'Edit a post or page and open the “Editorial Checklist” sidebar in the block editor to see and tick off the checklist items.', 'editorial-workflow-manager' ); ?>
+						<?php esc_html_e( 'Edit a post or page and open the "Editorial Checklist" sidebar in the block editor to see and tick off the checklist items.', 'editorial-workflow-manager' ); ?>
 					</li>
 					<li>
 						<?php esc_html_e( 'If you delete a checklist template, come back here to assign a new template to any post types that were using it.', 'editorial-workflow-manager' ); ?>
@@ -179,9 +137,7 @@ class EDIWORMAN_Settings {
 			</div>
 
 			<form method="post" action="options.php">
-				<?php
-				settings_fields( 'ediworman_settings_group' );
-				?>
+				<?php settings_fields( 'ediworman_settings_group' ); ?>
 
 				<table class="form-table" role="presentation">
 					<tbody>
@@ -202,24 +158,17 @@ class EDIWORMAN_Settings {
 										</tr>
 									</thead>
 									<tbody>
-										<?php foreach ( $post_types as $post_type => $obj ) : ?>
+										<?php foreach ( $post_types as $post_type => $post_type_object ) : ?>
 											<tr>
 												<td>
-													<?php echo esc_html( $obj->labels->singular_name ); ?>
+													<?php echo esc_html( $post_type_object->labels->singular_name ); ?>
 													<br>
 													<code><?php echo esc_html( $post_type ); ?></code>
 												</td>
 												<td>
 													<select name="ediworman_settings[post_type_templates][<?php echo esc_attr( $post_type ); ?>]">
-														<option value="0">
-															<?php esc_html_e( 'None', 'editorial-workflow-manager' ); ?>
-														</option>
+														<option value="0"><?php esc_html_e( 'None', 'editorial-workflow-manager' ); ?></option>
 														<?php foreach ( $templates as $template ) : ?>
-															<?php
-															$selected = isset( $mappings[ $post_type ] ) && (int) $mappings[ $post_type ] === (int) $template->ID
-																? 'selected'
-																: '';
-															?>
 															<option value="<?php echo esc_attr( $template->ID ); ?>" <?php selected( (int) ( $mappings[ $post_type ] ?? 0 ), (int) $template->ID ); ?>>
 																<?php echo esc_html( $template->post_title ); ?>
 															</option>
@@ -230,7 +179,6 @@ class EDIWORMAN_Settings {
 										<?php endforeach; ?>
 									</tbody>
 								</table>
-
 							</td>
 						</tr>
 					</tbody>
@@ -271,17 +219,155 @@ class EDIWORMAN_Settings {
 		}
 
 		$template = get_post( $template_id );
-
-		// If the template is gone or not our CPT, treat as no template.
 		if ( ! $template || 'ediworman_template' !== $template->post_type ) {
 			return null;
 		}
 
-		// If it's in trash, also treat as no template.
 		if ( 'trash' === $template->post_status ) {
 			return null;
 		}
 
 		return $template_id;
+	}
+
+	/**
+	 * Return post types that can be configured on the settings page.
+	 *
+	 * @return array<string, WP_Post_Type>
+	 */
+	public static function get_settings_post_types() {
+		$post_types = get_post_types(
+			array(
+				'show_ui' => true,
+				'public'  => true,
+			),
+			'objects'
+		);
+
+		unset( $post_types['ediworman_template'] );
+		unset( $post_types['attachment'] );
+
+		return $post_types;
+	}
+
+	/**
+	 * Return post types eligible for the quickstart wizard.
+	 *
+	 * @return array<string, WP_Post_Type>
+	 */
+	public static function get_quickstart_post_types() {
+		$post_types = get_post_types(
+			array(
+				'show_ui'      => true,
+				'show_in_rest' => true,
+			),
+			'objects'
+		);
+
+		foreach ( $post_types as $post_type => $post_type_object ) {
+			if ( 'ediworman_template' === $post_type || 'attachment' === $post_type ) {
+				unset( $post_types[ $post_type ] );
+				continue;
+			}
+
+			if ( ! post_type_supports( $post_type, 'editor' ) ) {
+				unset( $post_types[ $post_type ] );
+			}
+		}
+
+		return $post_types;
+	}
+
+	/**
+	 * Return checklist templates ordered by title.
+	 *
+	 * @return array<int, WP_Post>
+	 */
+	public static function get_templates() {
+		return get_posts(
+			array(
+				'post_type'      => 'ediworman_template',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+	}
+
+	/**
+	 * Sanitize post type to checklist template mappings.
+	 *
+	 * @param array              $raw_mappings       Raw mappings keyed by post type.
+	 * @param array<int, string> $allowed_post_types Allowed post type slugs.
+	 * @return array<string, int>
+	 */
+	public static function sanitize_post_type_template_mappings( $raw_mappings, $allowed_post_types = array() ) {
+		if ( ! is_array( $raw_mappings ) ) {
+			return array();
+		}
+
+		$sanitized          = array();
+		$allowed_post_types = array_map( 'sanitize_key', $allowed_post_types );
+		$allowed_lookup     = ! empty( $allowed_post_types ) ? array_fill_keys( $allowed_post_types, true ) : array();
+
+		foreach ( $raw_mappings as $post_type => $template_id ) {
+			$post_type   = sanitize_key( $post_type );
+			$template_id = absint( $template_id );
+
+			if ( ! $post_type || ! post_type_exists( $post_type ) ) {
+				continue;
+			}
+
+			if ( ! empty( $allowed_lookup ) && empty( $allowed_lookup[ $post_type ] ) ) {
+				continue;
+			}
+
+			if ( 'ediworman_template' === $post_type || 'attachment' === $post_type ) {
+				continue;
+			}
+
+			if ( $template_id <= 0 ) {
+				continue;
+			}
+
+			$template = get_post( $template_id );
+			if ( ! $template || 'ediworman_template' !== $template->post_type ) {
+				continue;
+			}
+
+			if ( 'trash' === $template->post_status ) {
+				continue;
+			}
+
+			$sanitized[ $post_type ] = (int) $template_id;
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Count checklist items stored on a template.
+	 *
+	 * @param int $template_id Checklist template ID.
+	 * @return int
+	 */
+	public static function get_template_item_count( $template_id ) {
+		$template_id = absint( $template_id );
+		if ( $template_id <= 0 ) {
+			return 0;
+		}
+
+		$items_v2 = get_post_meta( $template_id, '_ediworman_items_v2', true );
+		if ( is_array( $items_v2 ) ) {
+			return count( $items_v2 );
+		}
+
+		$legacy_items = get_post_meta( $template_id, '_ediworman_items', true );
+		if ( is_array( $legacy_items ) ) {
+			return count( $legacy_items );
+		}
+
+		return 0;
 	}
 }

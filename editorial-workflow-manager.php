@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Editorial Workflow Manager
  * Description: Add editorial checklists and approvals to the WordPress editor.
- * Version:     0.5.0
+ * Version:     0.6.0
  * Author:      Vasileios Zisis
  * Author URI:  https://profiles.wordpress.org/vzisis/
  * Text Domain: editorial-workflow-manager
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class EDIWORMAN_Plugin {
 
-	const VERSION = '0.5.0';
+	const VERSION = '0.6.0';
 
 	/**
 	 * Stored plugin version option name.
@@ -86,6 +86,13 @@ final class EDIWORMAN_Plugin {
 	private $editor_assets;
 
 	/**
+	 * Quickstart onboarding flow handler.
+	 *
+	 * @var EDIWORMAN_Onboarding
+	 */
+	private $onboarding;
+
+	/**
 	 * Get plugin singleton instance.
 	 *
 	 * @return EDIWORMAN_Plugin
@@ -109,6 +116,7 @@ final class EDIWORMAN_Plugin {
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-settings.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-meta.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-editor-assets.php';
+		require_once EDIWORMAN_PATH . 'includes/class-ediworman-onboarding.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-default-templates.php';
 
 		// Instantiate.
@@ -116,6 +124,7 @@ final class EDIWORMAN_Plugin {
 		$this->settings      = new EDIWORMAN_Settings();
 		$this->meta          = new EDIWORMAN_Meta();
 		$this->editor_assets = new EDIWORMAN_Editor_Assets();
+		$this->onboarding    = new EDIWORMAN_Onboarding();
 
 		// Hooks.
 		add_action( 'init', array( $this, 'on_init' ) );
@@ -272,11 +281,15 @@ final class EDIWORMAN_Plugin {
 	 * @return void
 	 */
 	public static function activate() {
-		EDIWORMAN_Default_Templates::create_on_activation();
-
 		$stored_version = get_option( self::VERSION_OPTION, '' );
 		if ( ! is_string( $stored_version ) ) {
 			$stored_version = '';
+		}
+
+		EDIWORMAN_Default_Templates::create_on_activation();
+
+		if ( '' === $stored_version ) {
+			update_option( EDIWORMAN_Onboarding::QUICKSTART_PENDING_OPTION, self::VERSION );
 		}
 
 		if (

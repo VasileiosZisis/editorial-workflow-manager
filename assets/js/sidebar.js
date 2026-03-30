@@ -325,6 +325,7 @@
           {
             status: readinessBoolean ? 'success' : 'warning',
             isDismissible: false,
+            className: 'ediworman-checklist-status-summary',
           },
           el(
             'p',
@@ -529,6 +530,7 @@
           name: 'ediworman-checklist-sidebar',
           title: __('Editorial Checklist', 'editorial-workflow-manager'),
           icon: 'yes-alt',
+          className: 'ediworman-checklist-sidebar',
         },
         el(SidebarContent, null),
       ),

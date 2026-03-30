@@ -15,14 +15,16 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
   - Non-blocking pre-publish warning.
 - Template mapping by post type from plugin settings.
 - Default templates created on activation.
+- Fresh-install Quickstart wizard for initial setup.
+- One-time editor tour that opens and highlights the checklist sidebar.
 - Translation-ready (`editorial-workflow-manager` text domain).
 
 ## Getting Started
 
-1. Create or edit a checklist template under `Checklist Templates`.
-2. Add items, reorder them, and mark each item as required or optional.
-3. Assign the template to a post type in `Settings -> Editorial Workflow`.
-4. Open a post in the block editor and use the `Editorial Checklist` sidebar.
+1. Activate the plugin and complete the Quickstart wizard.
+2. Choose the post types where checklists should appear and confirm the starter templates.
+3. Open the post editor from the wizard and follow the one-time sidebar tour.
+4. Adjust template mappings later in `Settings -> Editorial Workflow`.
 5. Complete required items until the readiness UI reports the checklist is ready.
 
 ## Data Model (Backward Compatible)
