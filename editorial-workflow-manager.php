@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Editorial Workflow Manager
  * Description: Add editorial checklists and approvals to the WordPress editor.
- * Version:     0.6.0
+ * Version:     0.7.0
  * Author:      Vasileios Zisis
  * Author URI:  https://profiles.wordpress.org/vzisis/
  * Text Domain: editorial-workflow-manager
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class EDIWORMAN_Plugin {
 
-	const VERSION = '0.6.0';
+	const VERSION = '0.7.0';
 
 	/**
 	 * Stored plugin version option name.
@@ -93,6 +93,13 @@ final class EDIWORMAN_Plugin {
 	private $onboarding;
 
 	/**
+	 * Admin list table enhancements.
+	 *
+	 * @var EDIWORMAN_List_Table|null
+	 */
+	private $list_table;
+
+	/**
 	 * Get plugin singleton instance.
 	 *
 	 * @return EDIWORMAN_Plugin
@@ -112,12 +119,14 @@ final class EDIWORMAN_Plugin {
 		$this->define_constants();
 
 		// Load classes.
+		require_once EDIWORMAN_PATH . 'includes/class-ediworman-readiness.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-templates-cpt.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-settings.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-meta.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-editor-assets.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-onboarding.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-default-templates.php';
+		require_once EDIWORMAN_PATH . 'includes/class-ediworman-list-table.php';
 
 		// Instantiate.
 		$this->templates_cpt = new EDIWORMAN_Templates_CPT();
@@ -125,6 +134,9 @@ final class EDIWORMAN_Plugin {
 		$this->meta          = new EDIWORMAN_Meta();
 		$this->editor_assets = new EDIWORMAN_Editor_Assets();
 		$this->onboarding    = new EDIWORMAN_Onboarding();
+		$this->list_table    = is_admin() ? new EDIWORMAN_List_Table() : null;
+
+		EDIWORMAN_Readiness::register_hooks();
 
 		// Hooks.
 		add_action( 'init', array( $this, 'on_init' ) );

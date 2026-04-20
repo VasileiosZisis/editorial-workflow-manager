@@ -23,11 +23,15 @@ function ediworman_uninstall_cleanup_site() {
 	// Delete settings.
 	delete_option( 'ediworman_settings' );
 	delete_option( 'ediworman_quickstart_pending_version' );
+	delete_option( 'ediworman_readiness_cache_version' );
 
 	// Remove post meta stored on edited content.
 	delete_post_meta_by_key( '_ediworman_checked_items' );
 	delete_post_meta_by_key( '_ediworman_checked_item_ids' );
 	delete_post_meta_by_key( '_ediworman_last_editor' );
+	delete_post_meta_by_key( '_ediworman_required_total_cache' );
+	delete_post_meta_by_key( '_ediworman_required_done_cache' );
+	delete_post_meta_by_key( '_ediworman_readiness_cache' );
 
 	// Remove onboarding dismissal flags.
 	delete_metadata( 'user', 0, 'ediworman_quickstart_dismissed_version', '', true );

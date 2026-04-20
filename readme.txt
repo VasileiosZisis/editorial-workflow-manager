@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.6.0
+Stable tag: 0.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,7 @@ This plugin does not output anything on the front end.
 * Create reusable **checklist templates** (required + optional items).
 * Assign different **editorial checklists** to different post types.
 * Track per-post checklist progress in the editor sidebar.
-* See readiness and progress in the sidebar, the post status panel, and the pre-publish panel.
+* See readiness and progress in the post list table, sidebar, post status panel, and pre-publish panel.
 
 === Typical use cases ===
 
@@ -41,6 +41,7 @@ This plugin does not output anything on the front end.
 * **Gutenberg / Block Editor sidebar** – “Editorial Checklist” panel inside the editor.
 * **Readiness + progress indicators**
   * Sidebar summary with Ready / Incomplete and required progress
+  * wp-admin post list Readiness column for mapped post types
   * Post Status panel summary while editing
   * Non-blocking pre-publish warning when required items are missing
 * **Different checklist per post type** – assign templates in Settings.
@@ -96,8 +97,14 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 2. Checklist template editor with required/optional items and reorder controls.
 3. Settings screen for assigning checklist templates to post types.
 4. Pre-publish checklist warning when required items are missing.
+5. wp-admin post list Readiness column showing checklist status for mapped post types.
 
 == Changelog ==
+
+= 0.7.0 =
+* Added a wp-admin Readiness column for mapped post types so teams can scan per-post checklist status from the post list.
+* Added shared server-side readiness calculation and lazy cache metadata for list-table rendering.
+* Added cache invalidation when checklist templates or post type mappings change.
 
 = 0.6.0 =
 * Added a fresh-install Quickstart wizard for selecting post types and assigning starter templates.
@@ -134,6 +141,9 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 * First public release.
 
 == Upgrade Notice ==
+
+= 0.7.0 =
+Mapped post types now show a Readiness column in wp-admin post lists. Readiness cache values are generated lazily and invalidated when templates or mappings change.
 
 = 0.6.0 =
 Fresh installs now include a Quickstart wizard and one-time editor sidebar tour to help administrators configure and discover the checklist workflow faster.

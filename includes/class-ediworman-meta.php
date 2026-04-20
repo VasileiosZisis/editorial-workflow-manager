@@ -63,6 +63,7 @@ class EDIWORMAN_Meta {
 	 * - _ediworman_checked_items: array of checklist item labels that are checked.
 	 * - _ediworman_checked_item_ids: array of checklist item UUIDs that are checked.
 	 * - _ediworman_last_editor:   user ID of the last editor (for display only).
+	 * - Readiness cache meta: internal list-table cache values.
 	 *
 	 * @return void
 	 */
@@ -144,6 +145,79 @@ class EDIWORMAN_Meta {
 				'sanitize_callback' => array( $this, 'sanitize_checked_item_ids' ),
 				'auth_callback'     => static function ( $allowed, $meta_key, $post_id ) {
 					if ( '_ediworman_checked_item_ids' !== $meta_key ) {
+						return false;
+					}
+
+					$post_id = (int) $post_id;
+					if ( $post_id <= 0 ) {
+						return false;
+					}
+
+					return current_user_can( 'edit_post', $post_id );
+				},
+			)
+		);
+
+		// Readiness cache values for admin list-table rendering.
+		register_post_meta(
+			'',
+			EDIWORMAN_Readiness::REQUIRED_TOTAL_CACHE_META,
+			array(
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 0,
+				'show_in_rest'      => false,
+				'sanitize_callback' => 'absint',
+				'auth_callback'     => static function ( $allowed, $meta_key, $post_id ) {
+					if ( EDIWORMAN_Readiness::REQUIRED_TOTAL_CACHE_META !== $meta_key ) {
+						return false;
+					}
+
+					$post_id = (int) $post_id;
+					if ( $post_id <= 0 ) {
+						return false;
+					}
+
+					return current_user_can( 'edit_post', $post_id );
+				},
+			)
+		);
+
+		register_post_meta(
+			'',
+			EDIWORMAN_Readiness::REQUIRED_DONE_CACHE_META,
+			array(
+				'single'            => true,
+				'type'              => 'integer',
+				'default'           => 0,
+				'show_in_rest'      => false,
+				'sanitize_callback' => 'absint',
+				'auth_callback'     => static function ( $allowed, $meta_key, $post_id ) {
+					if ( EDIWORMAN_Readiness::REQUIRED_DONE_CACHE_META !== $meta_key ) {
+						return false;
+					}
+
+					$post_id = (int) $post_id;
+					if ( $post_id <= 0 ) {
+						return false;
+					}
+
+					return current_user_can( 'edit_post', $post_id );
+				},
+			)
+		);
+
+		register_post_meta(
+			'',
+			EDIWORMAN_Readiness::READINESS_CACHE_META,
+			array(
+				'single'            => true,
+				'type'              => 'string',
+				'default'           => '',
+				'show_in_rest'      => false,
+				'sanitize_callback' => array( 'EDIWORMAN_Readiness', 'sanitize_readiness_cache_value' ),
+				'auth_callback'     => static function ( $allowed, $meta_key, $post_id ) {
+					if ( EDIWORMAN_Readiness::READINESS_CACHE_META !== $meta_key ) {
 						return false;
 					}
 
