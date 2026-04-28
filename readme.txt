@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.7.0
+Stable tag: 0.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,7 @@ This plugin does not output anything on the front end.
 * **Checklist templates** – manage reusable checklists as a custom post type.
 * **Template editor (row-based UI)** – add, remove, reorder items; mark each item Required or Optional.
 * **Required vs Optional items** – readiness is based on required items only.
+* **Helper text + reference links** – add plain guidance text and an optional reference URL to each checklist item.
 * **Per-post checklist state** – each post/page stores its own checklist progress.
 * **Gutenberg / Block Editor sidebar** – “Editorial Checklist” panel inside the editor.
 * **Readiness + progress indicators**
@@ -101,6 +102,10 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 
 == Changelog ==
 
+= 0.8.0 =
+* Added optional helper text and reference URLs to checklist template items.
+* Added collapsed checklist item details in the block editor sidebar.
+
 = 0.7.0 =
 * Added a wp-admin Readiness column for mapped post types so teams can scan per-post checklist status from the post list.
 * Added shared server-side readiness calculation and lazy cache metadata for list-table rendering.
@@ -141,6 +146,9 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 * First public release.
 
 == Upgrade Notice ==
+
+= 0.8.0 =
+Checklist template items can now include optional helper text and a reference URL. Existing templates continue to work unchanged.
 
 = 0.7.0 =
 Mapped post types now show a Readiness column in wp-admin post lists. Readiness cache values are generated lazily and invalidated when templates or mappings change.

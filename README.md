@@ -8,6 +8,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 - Checklist Template management is limited to users with page-management capabilities by default (typically Editors and Administrators).
 - Row-based template editor with add/remove/reorder controls.
 - Required and optional checklist items.
+- Optional helper text and a reference URL per checklist item.
 - Per-post checklist state in Gutenberg.
 - Clear readiness/progress indicators:
   - wp-admin post list Readiness column for mapped post types.
@@ -31,7 +32,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 ## Data Model (Backward Compatible)
 
 - Legacy template items: `_ediworman_items` (`array<string>` labels).
-- V2 template items: `_ediworman_items_v2` (`array<{id,label,required}>`) where `id` is UUID.
+- V2 template items: `_ediworman_items_v2` (`array<{id,label,description,url,required}>`) where `id` is UUID.
 - Legacy checked state: `_ediworman_checked_items` (`array<string>` labels).
 - V2 checked state: `_ediworman_checked_item_ids` (`array<string>` UUIDs).
 - Readiness cache: `_ediworman_required_total_cache`, `_ediworman_required_done_cache`, `_ediworman_readiness_cache`.
@@ -45,3 +46,4 @@ Legacy templates remain supported. When a legacy template is edited/saved in the
 - By default, only Editors and Administrators can create, edit, or delete Checklist Templates.
 - Built for block editor (Gutenberg), not Classic Editor.
 - Readiness depends on required items only; optional items do not block completion.
+- Helper text and reference links are guidance only; they do not affect readiness.

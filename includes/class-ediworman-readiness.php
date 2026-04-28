@@ -194,7 +194,7 @@ class EDIWORMAN_Readiness {
 	 * Return normalized template data for a mapped post type.
 	 *
 	 * @param string $post_type Post type slug.
-	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,required:bool}>}|null
+	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,description:string,url:string,required:bool}>}|null
 	 */
 	public static function get_template_data_for_post_type( $post_type ) {
 		$post_type = sanitize_key( $post_type );
@@ -506,7 +506,7 @@ class EDIWORMAN_Readiness {
 	 * Return normalized template data for a template ID.
 	 *
 	 * @param int $template_id Template post ID.
-	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,required:bool}>}|null
+	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,description:string,url:string,required:bool}>}|null
 	 */
 	private static function get_template_data( $template_id ) {
 		$template_id = absint( $template_id );
@@ -541,7 +541,7 @@ class EDIWORMAN_Readiness {
 	 * Normalize legacy label-based items.
 	 *
 	 * @param mixed $stored_items Raw legacy template items.
-	 * @return array<int, array{id:string,label:string,required:bool}>
+	 * @return array<int, array{id:string,label:string,description:string,url:string,required:bool}>
 	 */
 	private static function normalize_legacy_items( $stored_items ) {
 		if ( ! is_array( $stored_items ) ) {
@@ -560,9 +560,11 @@ class EDIWORMAN_Readiness {
 			}
 
 			$items[] = array(
-				'id'       => '',
-				'label'    => $label,
-				'required' => true,
+				'id'          => '',
+				'label'       => $label,
+				'description' => '',
+				'url'         => '',
+				'required'    => true,
 			);
 		}
 
@@ -573,7 +575,7 @@ class EDIWORMAN_Readiness {
 	 * Normalize v2 object-based template items.
 	 *
 	 * @param mixed $stored_items Raw v2 template items.
-	 * @return array<int, array{id:string,label:string,required:bool}>
+	 * @return array<int, array{id:string,label:string,description:string,url:string,required:bool}>
 	 */
 	private static function normalize_v2_items( $stored_items ) {
 		if ( ! is_array( $stored_items ) ) {
@@ -596,10 +598,15 @@ class EDIWORMAN_Readiness {
 				continue;
 			}
 
+			$description = isset( $item['description'] ) ? sanitize_textarea_field( (string) $item['description'] ) : '';
+			$url         = isset( $item['url'] ) ? esc_url_raw( (string) $item['url'] ) : '';
+
 			$items[] = array(
-				'id'       => $id,
-				'label'    => $label,
-				'required' => false !== ( $item['required'] ?? true ),
+				'id'          => $id,
+				'label'       => $label,
+				'description' => $description,
+				'url'         => $url,
+				'required'    => false !== ( $item['required'] ?? true ),
 			);
 		}
 

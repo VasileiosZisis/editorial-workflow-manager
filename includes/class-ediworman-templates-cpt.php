@@ -153,9 +153,11 @@ class EDIWORMAN_Templates_CPT {
 		if ( empty( $items ) ) {
 			$items = array(
 				array(
-					'id'       => '',
-					'label'    => '',
-					'required' => true,
+					'id'          => '',
+					'label'       => '',
+					'description' => '',
+					'url'         => '',
+					'required'    => true,
 				),
 			);
 		}
@@ -191,9 +193,11 @@ class EDIWORMAN_Templates_CPT {
 			<?php
 			$this->render_item_row(
 				array(
-					'id'       => '',
-					'label'    => '',
-					'required' => true,
+					'id'          => '',
+					'label'       => '',
+					'description' => '',
+					'url'         => '',
+					'required'    => true,
 				),
 				'__INDEX__'
 			);
@@ -212,8 +216,12 @@ class EDIWORMAN_Templates_CPT {
 	private function render_item_row( $item, $row_index ) {
 		$item_id           = isset( $item['id'] ) ? $this->sanitize_uuid( $item['id'] ) : '';
 		$item_label        = isset( $item['label'] ) ? sanitize_text_field( (string) $item['label'] ) : '';
+		$item_description  = isset( $item['description'] ) ? sanitize_textarea_field( (string) $item['description'] ) : '';
+		$item_url          = isset( $item['url'] ) ? esc_url_raw( (string) $item['url'] ) : '';
 		$item_is_required  = $this->normalize_required_flag( $item['required'] ?? true );
 		$label_input_id    = 'ediworman-template-item-label-' . $row_index;
+		$desc_input_id     = 'ediworman-template-item-description-' . $row_index;
+		$url_input_id      = 'ediworman-template-item-url-' . $row_index;
 		$required_input_id = 'ediworman-template-item-required-' . $row_index;
 		$row_actions_aria  = sprintf(
 			/* translators: %s: row number token */
@@ -239,6 +247,29 @@ class EDIWORMAN_Templates_CPT {
 					name="ediworman_template_items[label][]"
 					value="<?php echo esc_attr( $item_label ); ?>"
 				/>
+				<p>
+					<label class="ediworman-template-item-description-label" for="<?php echo esc_attr( $desc_input_id ); ?>">
+						<?php esc_html_e( 'Helper text', 'editorial-workflow-manager' ); ?>
+					</label>
+					<textarea
+						class="widefat ediworman-template-item-description"
+						id="<?php echo esc_attr( $desc_input_id ); ?>"
+						name="ediworman_template_items[description][]"
+						rows="2"
+					><?php echo esc_textarea( $item_description ); ?></textarea>
+				</p>
+				<p>
+					<label class="ediworman-template-item-url-label" for="<?php echo esc_attr( $url_input_id ); ?>">
+						<?php esc_html_e( 'Reference URL', 'editorial-workflow-manager' ); ?>
+					</label>
+					<input
+						type="url"
+						class="widefat ediworman-template-item-url"
+						id="<?php echo esc_attr( $url_input_id ); ?>"
+						name="ediworman_template_items[url][]"
+						value="<?php echo esc_attr( $item_url ); ?>"
+					/>
+				</p>
 				<p class="description ediworman-template-item-error" hidden></p>
 			</td>
 			<td>
@@ -330,7 +361,7 @@ class EDIWORMAN_Templates_CPT {
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately by map_deep callback.
 			wp_unslash( $_POST['ediworman_template_items'] ),
 			static function ( $value ) {
-				return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : $value;
+				return is_scalar( $value ) ? sanitize_textarea_field( (string) $value ) : $value;
 			}
 		);
 		if ( ! $this->is_items_request_shape_valid( $raw_items ) ) {
@@ -376,6 +407,12 @@ class EDIWORMAN_Templates_CPT {
 			}
 		}
 
+		foreach ( array( 'description', 'url' ) as $optional_key ) {
+			if ( array_key_exists( $optional_key, $raw_items ) && ! is_array( $raw_items[ $optional_key ] ) ) {
+				return false;
+			}
+		}
+
 		return true;
 	}
 
@@ -383,13 +420,15 @@ class EDIWORMAN_Templates_CPT {
 	 * Parse normalized v2 items from metabox request payload.
 	 *
 	 * @param array $raw_items Raw request payload.
-	 * @return array<int, array{id:string,label:string,required:bool}>
+	 * @return array<int, array{id:string,label:string,description:string,url:string,required:bool}>
 	 */
 	private function parse_items_v2_from_request( $raw_items ) {
-		$ids      = isset( $raw_items['id'] ) && is_array( $raw_items['id'] ) ? $raw_items['id'] : array();
-		$labels   = isset( $raw_items['label'] ) && is_array( $raw_items['label'] ) ? $raw_items['label'] : array();
-		$required = isset( $raw_items['required'] ) && is_array( $raw_items['required'] ) ? $raw_items['required'] : array();
-		$row_max  = max( count( $ids ), count( $labels ), count( $required ) );
+		$ids          = isset( $raw_items['id'] ) && is_array( $raw_items['id'] ) ? $raw_items['id'] : array();
+		$labels       = isset( $raw_items['label'] ) && is_array( $raw_items['label'] ) ? $raw_items['label'] : array();
+		$descriptions = isset( $raw_items['description'] ) && is_array( $raw_items['description'] ) ? $raw_items['description'] : array();
+		$urls         = isset( $raw_items['url'] ) && is_array( $raw_items['url'] ) ? $raw_items['url'] : array();
+		$required     = isset( $raw_items['required'] ) && is_array( $raw_items['required'] ) ? $raw_items['required'] : array();
+		$row_max      = max( count( $ids ), count( $labels ), count( $descriptions ), count( $urls ), count( $required ) );
 
 		$items_v2 = array();
 		$used_ids = array();
@@ -407,12 +446,16 @@ class EDIWORMAN_Templates_CPT {
 
 			$used_ids[] = $item_id;
 
-			$item_required = $this->normalize_required_flag( $required[ $index ] ?? '1' );
+			$item_description = isset( $descriptions[ $index ] ) ? sanitize_textarea_field( trim( (string) $descriptions[ $index ] ) ) : '';
+			$item_url         = isset( $urls[ $index ] ) ? esc_url_raw( trim( (string) $urls[ $index ] ) ) : '';
+			$item_required    = $this->normalize_required_flag( $required[ $index ] ?? '1' );
 
 			$items_v2[] = array(
-				'id'       => $item_id,
-				'label'    => $label_value,
-				'required' => $item_required,
+				'id'          => $item_id,
+				'label'       => $label_value,
+				'description' => $item_description,
+				'url'         => $item_url,
+				'required'    => $item_required,
 			);
 		}
 
@@ -423,7 +466,7 @@ class EDIWORMAN_Templates_CPT {
 	 * Return normalized item rows for the metabox editor.
 	 *
 	 * @param int $post_id Template post ID.
-	 * @return array<int, array{id:string,label:string,required:bool}>
+	 * @return array<int, array{id:string,label:string,description:string,url:string,required:bool}>
 	 */
 	private function get_items_for_editor( $post_id ) {
 		$items_v2 = $this->get_existing_items_v2( $post_id );
@@ -439,7 +482,7 @@ class EDIWORMAN_Templates_CPT {
 	 * Normalize legacy label items for row editor usage.
 	 *
 	 * @param mixed $legacy_items Legacy label array from _ediworman_items.
-	 * @return array<int, array{id:string,label:string,required:bool}>
+	 * @return array<int, array{id:string,label:string,description:string,url:string,required:bool}>
 	 */
 	private function normalize_legacy_items( $legacy_items ) {
 		if ( ! is_array( $legacy_items ) ) {
@@ -458,9 +501,11 @@ class EDIWORMAN_Templates_CPT {
 			}
 
 			$items[] = array(
-				'id'       => '',
-				'label'    => $parsed['label'],
-				'required' => $parsed['required'],
+				'id'          => '',
+				'label'       => $parsed['label'],
+				'description' => '',
+				'url'         => '',
+				'required'    => $parsed['required'],
 			);
 		}
 
@@ -501,7 +546,7 @@ class EDIWORMAN_Templates_CPT {
 	 * Return normalized existing v2 items.
 	 *
 	 * @param int $post_id Template post ID.
-	 * @return array<int, array{id:string,label:string,required:bool}>
+	 * @return array<int, array{id:string,label:string,description:string,url:string,required:bool}>
 	 */
 	private function get_existing_items_v2( $post_id ) {
 		$stored = get_post_meta( $post_id, '_ediworman_items_v2', true );
@@ -525,10 +570,15 @@ class EDIWORMAN_Templates_CPT {
 				continue;
 			}
 
+			$description = isset( $item['description'] ) ? sanitize_textarea_field( (string) $item['description'] ) : '';
+			$url         = isset( $item['url'] ) ? esc_url_raw( (string) $item['url'] ) : '';
+
 			$items[] = array(
-				'id'       => $id,
-				'label'    => $label,
-				'required' => $this->normalize_required_flag( $item['required'] ?? true ),
+				'id'          => $id,
+				'label'       => $label,
+				'description' => $description,
+				'url'         => $url,
+				'required'    => $this->normalize_required_flag( $item['required'] ?? true ),
 			);
 		}
 

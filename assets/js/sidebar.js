@@ -34,6 +34,9 @@
         const required = item.required !== false;
         const rawId = typeof item.id === 'string' ? item.id.trim() : '';
         const id = rawId && UUID_PATTERN.test(rawId) ? rawId.toLowerCase() : '';
+        const description =
+          typeof item.description === 'string' ? item.description.trim() : '';
+        const url = typeof item.url === 'string' ? item.url.trim() : '';
 
         if (templateMode === 'v2' && !id) {
           return null;
@@ -42,6 +45,8 @@
         return {
           id,
           label,
+          description,
+          url,
           required,
         };
       })
@@ -345,22 +350,72 @@
           },
           optionalProgressText,
         ),
-      items.map((item) =>
-        el(CheckboxControl, {
-          key: item.id || item.label,
-          label:
-            item.required
-              ? item.label
-              : sprintf(
-                  /* translators: 1: item label, 2: optional marker */
-                  __('%1$s (%2$s)', 'editorial-workflow-manager'),
-                  item.label,
-                  __('Optional', 'editorial-workflow-manager'),
+      items.map((item) => {
+        const itemKey = item.id || item.label;
+        const label = item.required
+          ? item.label
+          : sprintf(
+              /* translators: 1: item label, 2: optional marker */
+              __('%1$s (%2$s)', 'editorial-workflow-manager'),
+              item.label,
+              __('Optional', 'editorial-workflow-manager'),
+            );
+        const hasDetails = !!item.description || !!item.url;
+
+        return el(
+          Fragment,
+          { key: itemKey },
+          el(CheckboxControl, {
+            label,
+            checked: isChecked(item),
+            onChange: () => toggleItem(item),
+          }),
+          hasDetails &&
+            el(
+              'details',
+              {
+                style: {
+                  margin: '-8px 0 12px 24px',
+                  fontSize: '12px',
+                },
+              },
+              el(
+                'summary',
+                {
+                  style: {
+                    cursor: 'pointer',
+                  },
+                },
+                __('Details', 'editorial-workflow-manager'),
+              ),
+              item.description &&
+                el(
+                  'p',
+                  {
+                    style: {
+                      margin: '6px 0',
+                      whiteSpace: 'pre-wrap',
+                    },
+                  },
+                  item.description,
                 ),
-          checked: isChecked(item),
-          onChange: () => toggleItem(item),
-        }),
-      ),
+              item.url &&
+                el(
+                  'p',
+                  { style: { margin: '6px 0' } },
+                  el(
+                    'a',
+                    {
+                      href: item.url,
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                    },
+                    __('Reference', 'editorial-workflow-manager'),
+                  ),
+                ),
+            ),
+        );
+      }),
       lastUpdatedText &&
         el(
           'p',

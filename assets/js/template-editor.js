@@ -53,6 +53,14 @@
     rows.forEach((row, index) => {
       const labelInput = row.querySelector('.ediworman-template-item-label');
       const labelLabel = row.querySelector('.ediworman-template-item-label-label');
+      const descriptionInput = row.querySelector(
+        '.ediworman-template-item-description',
+      );
+      const descriptionLabel = row.querySelector(
+        '.ediworman-template-item-description-label',
+      );
+      const urlInput = row.querySelector('.ediworman-template-item-url');
+      const urlLabel = row.querySelector('.ediworman-template-item-url-label');
       const requiredSelect = row.querySelector('.ediworman-template-item-required');
       const requiredLabel = row.querySelector('.ediworman-template-item-required-label');
       const upButton = row.querySelector('.ediworman-template-item-up');
@@ -62,6 +70,18 @@
         const labelInputId = `ediworman-template-item-label-${index}`;
         labelInput.id = labelInputId;
         labelLabel.setAttribute('for', labelInputId);
+      }
+
+      if (descriptionInput && descriptionLabel) {
+        const descriptionInputId = `ediworman-template-item-description-${index}`;
+        descriptionInput.id = descriptionInputId;
+        descriptionLabel.setAttribute('for', descriptionInputId);
+      }
+
+      if (urlInput && urlLabel) {
+        const urlInputId = `ediworman-template-item-url-${index}`;
+        urlInput.id = urlInputId;
+        urlLabel.setAttribute('for', urlInputId);
       }
 
       if (requiredSelect && requiredLabel) {
