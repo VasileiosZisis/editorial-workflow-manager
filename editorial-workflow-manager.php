@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Editorial Workflow Manager
  * Description: Add editorial checklists and approvals to the WordPress editor.
- * Version:     0.8.0
+ * Version:     0.9.0
  * Author:      Vasileios Zisis
  * Author URI:  https://profiles.wordpress.org/vzisis/
  * Text Domain: editorial-workflow-manager
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class EDIWORMAN_Plugin {
 
-	const VERSION = '0.8.0';
+	const VERSION = '0.9.0';
 
 	/**
 	 * Stored plugin version option name.
@@ -185,6 +185,8 @@ final class EDIWORMAN_Plugin {
 		if ( version_compare( $stored_version, self::VERSION, '>=' ) ) {
 			return;
 		}
+
+		EDIWORMAN_Default_Templates::create_on_activation();
 
 		if (
 			version_compare( $stored_version, self::TEMPLATE_CAPABILITY_NOTICE_VERSION, '<' ) &&

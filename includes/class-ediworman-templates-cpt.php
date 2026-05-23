@@ -31,6 +31,10 @@ class EDIWORMAN_Templates_CPT {
 
 		// Save checklist items.
 		add_action( 'save_post_ediworman_template', array( $this, 'save_template_meta' ), 10, 2 );
+
+		// Template duplication action.
+		add_filter( 'post_row_actions', array( $this, 'filter_row_actions' ), 10, 2 );
+		add_action( 'admin_post_ediworman_duplicate_template', array( $this, 'handle_duplicate_template' ) );
 	}
 
 	/**
@@ -84,6 +88,95 @@ class EDIWORMAN_Templates_CPT {
 			'normal',
 			'high'
 		);
+	}
+
+	/**
+	 * Add a duplicate action to checklist template row actions.
+	 *
+	 * @param array   $actions Existing row actions.
+	 * @param WP_Post $post    Current row post.
+	 * @return array
+	 */
+	public function filter_row_actions( $actions, $post ) {
+		if ( ! $post instanceof WP_Post || 'ediworman_template' !== $post->post_type ) {
+			return $actions;
+		}
+
+		if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+			return $actions;
+		}
+
+		$duplicate_url = wp_nonce_url(
+			add_query_arg(
+				array(
+					'action' => 'ediworman_duplicate_template',
+					'post'   => (int) $post->ID,
+				),
+				admin_url( 'admin-post.php' )
+			),
+			'ediworman_duplicate_template_' . (int) $post->ID,
+			'_ediworman_duplicate_nonce'
+		);
+
+		$actions['ediworman_duplicate'] = sprintf(
+			'<a href="%1$s" aria-label="%2$s">%3$s</a>',
+			esc_url( $duplicate_url ),
+			esc_attr(
+				sprintf(
+					/* translators: %s: checklist template title. */
+					__( 'Duplicate "%s"', 'editorial-workflow-manager' ),
+					get_the_title( $post )
+				)
+			),
+			esc_html__( 'Duplicate', 'editorial-workflow-manager' )
+		);
+
+		return $actions;
+	}
+
+	/**
+	 * Handle the checklist template duplicate admin action.
+	 *
+	 * @return void
+	 */
+	public function handle_duplicate_template() {
+		$template_id = isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0;
+		if ( $template_id <= 0 ) {
+			wp_die( esc_html__( 'Invalid checklist template.', 'editorial-workflow-manager' ), 403 );
+		}
+
+		$nonce = isset( $_GET['_ediworman_duplicate_nonce'] )
+			? sanitize_text_field( wp_unslash( $_GET['_ediworman_duplicate_nonce'] ) )
+			: '';
+
+		if ( ! wp_verify_nonce( $nonce, 'ediworman_duplicate_template_' . $template_id ) ) {
+			wp_die( esc_html__( 'Invalid duplicate request.', 'editorial-workflow-manager' ), 403 );
+		}
+
+		if ( ! current_user_can( 'edit_post', $template_id ) ) {
+			wp_die( esc_html__( 'You are not allowed to duplicate this checklist template.', 'editorial-workflow-manager' ), 403 );
+		}
+
+		$template = get_post( $template_id );
+		if ( ! $template || 'ediworman_template' !== $template->post_type || 'trash' === $template->post_status ) {
+			wp_die( esc_html__( 'Invalid checklist template.', 'editorial-workflow-manager' ), 404 );
+		}
+
+		$duplicate_id = $this->duplicate_template( $template );
+		if ( $duplicate_id <= 0 ) {
+			wp_die( esc_html__( 'The checklist template could not be duplicated.', 'editorial-workflow-manager' ), 500 );
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'post'   => $duplicate_id,
+					'action' => 'edit',
+				),
+				admin_url( 'post.php' )
+			)
+		);
+		exit;
 	}
 
 	/**
@@ -383,6 +476,125 @@ class EDIWORMAN_Templates_CPT {
 
 		update_post_meta( $post_id, '_ediworman_items_v2', $items_v2 );
 		update_post_meta( $post_id, '_ediworman_items', $legacy_labels );
+	}
+
+	/**
+	 * Duplicate a checklist template post and its item metadata.
+	 *
+	 * @param WP_Post $template Source checklist template.
+	 * @return int
+	 */
+	private function duplicate_template( $template ) {
+		$duplicate_id = wp_insert_post(
+			array(
+				'post_type'   => 'ediworman_template',
+				'post_status' => 'publish',
+				'post_title'  => $this->get_unique_duplicate_title( $template->post_title ),
+			)
+		);
+
+		if ( ! $duplicate_id || is_wp_error( $duplicate_id ) ) {
+			return 0;
+		}
+
+		$duplicate_id = (int) $duplicate_id;
+		$items_v2     = $this->get_existing_items_v2( $template->ID );
+
+		if ( ! empty( $items_v2 ) ) {
+			$duplicated_items = $this->regenerate_item_ids( $items_v2 );
+			update_post_meta( $duplicate_id, '_ediworman_items_v2', $duplicated_items );
+			update_post_meta( $duplicate_id, '_ediworman_items', wp_list_pluck( $duplicated_items, 'label' ) );
+
+			return $duplicate_id;
+		}
+
+		$legacy_items = get_post_meta( $template->ID, '_ediworman_items', true );
+		if ( is_array( $legacy_items ) ) {
+			$legacy_labels = array();
+
+			foreach ( $legacy_items as $legacy_item ) {
+				if ( ! is_scalar( $legacy_item ) ) {
+					continue;
+				}
+
+				$label = sanitize_text_field( (string) $legacy_item );
+				if ( '' !== $label ) {
+					$legacy_labels[] = $label;
+				}
+			}
+
+			if ( ! empty( $legacy_labels ) ) {
+				update_post_meta( $duplicate_id, '_ediworman_items', $legacy_labels );
+			}
+		}
+
+		return $duplicate_id;
+	}
+
+	/**
+	 * Return an unused duplicate title for a template.
+	 *
+	 * @param string $source_title Source template title.
+	 * @return string
+	 */
+	private function get_unique_duplicate_title( $source_title ) {
+		$base_title = sprintf(
+			/* translators: %s: source checklist template title. */
+			__( 'Copy of %s', 'editorial-workflow-manager' ),
+			$source_title
+		);
+		$title      = $base_title;
+		$suffix     = 2;
+
+		while ( $this->template_title_exists( $title ) ) {
+			$title = sprintf(
+				/* translators: 1: duplicate checklist template title, 2: numeric suffix. */
+				__( '%1$s (%2$d)', 'editorial-workflow-manager' ),
+				$base_title,
+				$suffix
+			);
+			++$suffix;
+		}
+
+		return $title;
+	}
+
+	/**
+	 * Return whether a checklist template title already exists.
+	 *
+	 * @param string $title Template title.
+	 * @return bool
+	 */
+	private function template_title_exists( $title ) {
+		$existing = get_posts(
+			array(
+				'post_type'      => 'ediworman_template',
+				'title'          => $title,
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+			)
+		);
+
+		return ! empty( $existing );
+	}
+
+	/**
+	 * Regenerate UUIDs for duplicated v2 items.
+	 *
+	 * @param array<int, array{id:string,label:string,description:string,url:string,required:bool}> $items Source v2 items.
+	 * @return array<int, array{id:string,label:string,description:string,url:string,required:bool}>
+	 */
+	private function regenerate_item_ids( $items ) {
+		$used_ids = array();
+
+		foreach ( $items as $index => $item ) {
+			$items[ $index ]['id'] = $this->generate_unique_uuid( $used_ids );
+			$used_ids[]           = $items[ $index ]['id'];
+		}
+
+		return $items;
 	}
 
 	/**

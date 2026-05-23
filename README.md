@@ -7,6 +7,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 - Reusable checklist templates (`ediworman_template` CPT).
 - Checklist Template management is limited to users with page-management capabilities by default (typically Editors and Administrators).
 - Row-based template editor with add/remove/reorder controls.
+- Duplicate action for quickly cloning checklist templates.
 - Required and optional checklist items.
 - Optional helper text and a reference URL per checklist item.
 - Per-post checklist state in Gutenberg.
@@ -16,7 +17,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
   - Status and visibility panel.
   - Non-blocking pre-publish warning.
 - Template mapping by post type from plugin settings.
-- Default templates created on activation.
+- Curated starter templates created on activation and upgrade.
 - Fresh-install Quickstart wizard for initial setup.
 - One-time editor tour that opens and highlights the checklist sidebar.
 - Translation-ready (`editorial-workflow-manager` text domain).

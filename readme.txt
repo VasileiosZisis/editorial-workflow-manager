@@ -2,9 +2,9 @@
 Contributors: vzisis
 Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,8 @@ This plugin does not output anything on the front end.
 
 == Key features ==
 
+* **Template duplication** - clone checklist templates and customize the copy.
+* **Curated starter templates** - includes Blog SEO, News Fact-Check, Accessibility Review, and Client Approval templates.
 * **Checklist templates** – manage reusable checklists as a custom post type.
 * **Template editor (row-based UI)** – add, remove, reorder items; mark each item Required or Optional.
 * **Required vs Optional items** – readiness is based on required items only.
@@ -46,7 +48,7 @@ This plugin does not output anything on the front end.
   * Post Status panel summary while editing
   * Non-blocking pre-publish warning when required items are missing
 * **Different checklist per post type** – assign templates in Settings.
-* **Default templates included** on activation.
+* **Curated starter templates included** on activation and upgrade.
 * **Fresh-install quickstart wizard** – choose post types, assign starter templates, and jump straight into the editor.
 * **Lightweight editor tour** – auto-open the checklist sidebar once and explain required-item readiness.
 * **Backward compatible upgrades** – legacy templates still work and upgrade to UUID-based v2 items when saved.
@@ -92,6 +94,9 @@ Legacy templates and label-based checked state remain supported.
 
 Templates are now stored in an upgraded **v2** format with UUID-based item IDs for more stable matching. When a legacy template is edited and saved in the new editor, it is upgraded to v2 automatically. A compatibility meta mirror is still maintained for legacy support.
 
+= Can I duplicate checklist templates? =
+Yes. Use the **Duplicate** row action on the Checklist Templates screen to create an editable copy.
+
 == Screenshots ==
 
 1. Editorial Checklist sidebar in the block editor (Gutenberg) with required progress.
@@ -101,6 +106,11 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 5. wp-admin post list Readiness column showing checklist status for mapped post types.
 
 == Changelog ==
+
+= 0.9.0 =
+* Added a Duplicate action for Checklist Templates.
+* Added curated starter templates for Blog SEO, News Fact-Check, Accessibility Review, and Client Approval.
+* Added upgrade handling so missing starter templates are created without overwriting existing templates.
 
 = 0.8.0 =
 * Added optional helper text and reference URLs to checklist template items.
@@ -146,6 +156,9 @@ Templates are now stored in an upgraded **v2** format with UUID-based item IDs f
 * First public release.
 
 == Upgrade Notice ==
+
+= 0.9.0 =
+Adds template duplication and creates missing curated starter templates without changing existing checklist mappings.
 
 = 0.8.0 =
 Checklist template items can now include optional helper text and a reference URL. Existing templates continue to work unchanged.
