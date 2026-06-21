@@ -143,7 +143,7 @@ class EDIWORMAN_Settings {
 					<tbody>
 						<tr>
 							<th scope="row">
-								<label><?php esc_html_e( 'Template per post type', 'editorial-workflow-manager' ); ?></label>
+								<?php esc_html_e( 'Template per post type', 'editorial-workflow-manager' ); ?>
 							</th>
 							<td>
 								<p class="description">
@@ -151,6 +151,9 @@ class EDIWORMAN_Settings {
 								</p>
 
 								<table>
+									<caption class="screen-reader-text">
+										<?php esc_html_e( 'Checklist template mappings by post type', 'editorial-workflow-manager' ); ?>
+									</caption>
 									<thead>
 										<tr>
 											<th style="text-align:left;"><?php esc_html_e( 'Post type', 'editorial-workflow-manager' ); ?></th>
@@ -159,14 +162,20 @@ class EDIWORMAN_Settings {
 									</thead>
 									<tbody>
 										<?php foreach ( $post_types as $post_type => $post_type_object ) : ?>
+											<?php $select_id = 'ediworman-template-mapping-' . $post_type; ?>
 											<tr>
-												<td>
-													<?php echo esc_html( $post_type_object->labels->singular_name ); ?>
+												<th scope="row">
+													<label for="<?php echo esc_attr( $select_id ); ?>">
+														<?php echo esc_html( $post_type_object->labels->singular_name ); ?>
+													</label>
 													<br>
 													<code><?php echo esc_html( $post_type ); ?></code>
-												</td>
+												</th>
 												<td>
-													<select name="ediworman_settings[post_type_templates][<?php echo esc_attr( $post_type ); ?>]">
+													<select
+														id="<?php echo esc_attr( $select_id ); ?>"
+														name="ediworman_settings[post_type_templates][<?php echo esc_attr( $post_type ); ?>]"
+													>
 														<option value="0"><?php esc_html_e( 'None', 'editorial-workflow-manager' ); ?></option>
 														<?php foreach ( $templates as $template ) : ?>
 															<option value="<?php echo esc_attr( $template->ID ); ?>" <?php selected( (int) ( $mappings[ $post_type ] ?? 0 ), (int) $template->ID ); ?>>

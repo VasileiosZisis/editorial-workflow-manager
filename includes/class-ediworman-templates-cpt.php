@@ -215,16 +215,51 @@ class EDIWORMAN_Templates_CPT {
 		wp_enqueue_script(
 			'ediworman-template-editor',
 			EDIWORMAN_URL . 'assets/js/template-editor.js',
-			array(),
+			array( 'wp-i18n' ),
 			EDIWORMAN_VERSION,
 			true
+		);
+
+		wp_enqueue_style(
+			'ediworman-template-editor',
+			EDIWORMAN_URL . 'assets/css/template-editor.css',
+			array(),
+			EDIWORMAN_VERSION
 		);
 
 		wp_localize_script(
 			'ediworman-template-editor',
 			'EDIWORMAN_TEMPLATE_EDITOR_DATA',
 			array(
-				'emptyLabelMessage' => __( 'Item label is required.', 'editorial-workflow-manager' ),
+				'emptyLabelMessage'       => __( 'Item label is required.', 'editorial-workflow-manager' ),
+				'untitledItem'            => __( 'Untitled checklist item', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item position, 2: total checklist item count. */
+				'rowLabel'                => __( 'Checklist item label, item %1$d of %2$d', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: item position, 3: total item count. */
+				'descriptionLabel'        => __( 'Helper text for %1$s, item %2$d of %3$d', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: item position, 3: total item count. */
+				'urlLabel'                => __( 'Reference URL for %1$s, item %2$d of %3$d', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: item position, 3: total item count. */
+				'requiredLabel'           => __( 'Checklist item type for %1$s, item %2$d of %3$d', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: item position, 3: total item count. */
+				'rowActionsLabel'         => __( 'Actions for %1$s, item %2$d of %3$d', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: item position, 3: total item count. */
+				'moveUpLabel'             => __( 'Move %1$s up, item %2$d of %3$d', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: item position, 3: total item count. */
+				'moveDownLabel'           => __( 'Move %1$s down, item %2$d of %3$d', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: item position, 3: total item count. */
+				'removeLabel'             => __( 'Remove %1$s, item %2$d of %3$d', 'editorial-workflow-manager' ),
+				/* translators: 1: new item position, 2: total checklist item count. */
+				'addedAnnouncement'       => __( 'Added item %1$d of %2$d.', 'editorial-workflow-manager' ),
+				/* translators: 1: checklist item label, 2: new item position, 3: total item count. */
+				'movedAnnouncement'       => __( 'Moved %1$s to position %2$d of %3$d.', 'editorial-workflow-manager' ),
+				/* translators: %s: removed checklist item label. */
+				'removedOneAnnouncement'  => __( 'Removed %1$s. One item remains.', 'editorial-workflow-manager' ),
+				/* translators: 1: removed checklist item label, 2: remaining item count. */
+				'removedManyAnnouncement' => __( 'Removed %1$s. %2$d items remain.', 'editorial-workflow-manager' ),
+				/* translators: %s: removed checklist item label. */
+				'removedAllAnnouncement'  => __( 'Removed %s. No items remain.', 'editorial-workflow-manager' ),
+				'validationAnnouncement'  => __( 'Please correct the highlighted checklist item labels.', 'editorial-workflow-manager' ),
 			)
 		);
 	}
@@ -261,6 +296,9 @@ class EDIWORMAN_Templates_CPT {
 			</p>
 
 			<table class="widefat striped">
+				<caption class="screen-reader-text">
+					<?php esc_html_e( 'Checklist template items', 'editorial-workflow-manager' ); ?>
+				</caption>
 				<thead>
 					<tr>
 						<th scope="col"><?php esc_html_e( 'Item', 'editorial-workflow-manager' ); ?></th>
@@ -274,6 +312,12 @@ class EDIWORMAN_Templates_CPT {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
+
+			<p
+				class="screen-reader-text ediworman-template-editor-status"
+				aria-live="polite"
+				aria-atomic="true"
+			></p>
 
 			<p>
 				<button type="button" class="button ediworman-template-item-add">
@@ -316,6 +360,7 @@ class EDIWORMAN_Templates_CPT {
 		$desc_input_id     = 'ediworman-template-item-description-' . $row_index;
 		$url_input_id      = 'ediworman-template-item-url-' . $row_index;
 		$required_input_id = 'ediworman-template-item-required-' . $row_index;
+		$error_id          = 'ediworman-template-item-error-' . $row_index;
 		$row_actions_aria  = sprintf(
 			/* translators: %s: row number token */
 			__( 'Checklist item row actions %s', 'editorial-workflow-manager' ),
@@ -363,7 +408,11 @@ class EDIWORMAN_Templates_CPT {
 						value="<?php echo esc_attr( $item_url ); ?>"
 					/>
 				</p>
-				<p class="description ediworman-template-item-error" hidden></p>
+				<p
+					class="description ediworman-template-item-error"
+					id="<?php echo esc_attr( $error_id ); ?>"
+					hidden
+				></p>
 			</td>
 			<td>
 				<label class="screen-reader-text ediworman-template-item-required-label" for="<?php echo esc_attr( $required_input_id ); ?>">
@@ -400,7 +449,11 @@ class EDIWORMAN_Templates_CPT {
 					>
 						<span aria-hidden="true">&darr;</span>
 					</button>
-					<button type="button" class="button button-small button-link-delete ediworman-template-item-remove">
+					<button
+						type="button"
+						class="button button-small button-link-delete ediworman-template-item-remove"
+						aria-label="<?php esc_attr_e( 'Remove checklist item', 'editorial-workflow-manager' ); ?>"
+					>
 						<?php esc_html_e( 'Remove', 'editorial-workflow-manager' ); ?>
 					</button>
 				</div>

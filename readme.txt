@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 0.9.0
+Stable tag: 0.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,7 @@ This plugin does not output anything on the front end.
 
 == Key features ==
 
+* **Accessible workflows** - contextual labels, live status announcements, visible focus states, and keyboard-safe template controls.
 * **Template duplication** - clone checklist templates and customize the copy.
 * **Curated starter templates** - includes Blog SEO, News Fact-Check, Accessibility Review, and Client Approval templates.
 * **Checklist templates** – manage reusable checklists as a custom post type.
@@ -107,6 +108,11 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 
 == Changelog ==
 
+= 0.10.0 =
+* Improved keyboard and screen-reader support across the checklist sidebar, pre-publish warning, Quickstart, settings, and editor tour.
+* Added contextual template row actions, live reorder/add/remove announcements, deterministic focus handling, and associated validation errors.
+* Added visible focus styling for plugin-owned controls and fixed the editor-tour spotlight state.
+
 = 0.9.0 =
 * Added a Duplicate action for Checklist Templates.
 * Added curated starter templates for Blog SEO, News Fact-Check, Accessibility Review, and Client Approval.
@@ -156,6 +162,9 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 * First public release.
 
 == Upgrade Notice ==
+
+= 0.10.0 =
+Improves keyboard navigation, screen-reader context, focus visibility, dynamic announcements, and template-editor validation without changing checklist data.
 
 = 0.9.0 =
 Adds template duplication and creates missing curated starter templates without changing existing checklist mappings.

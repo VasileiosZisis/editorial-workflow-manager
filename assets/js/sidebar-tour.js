@@ -60,11 +60,11 @@
       openSidebar();
 
       const timeoutId = window.setTimeout(openSidebar, 250);
-      document.documentElement.classList.add('ediworman-tour-active');
+      document.body.classList.add('ediworman-tour-active');
 
       return () => {
         window.clearTimeout(timeoutId);
-        document.documentElement.classList.remove('ediworman-tour-active');
+        document.body.classList.remove('ediworman-tour-active');
       };
     }, []);
 

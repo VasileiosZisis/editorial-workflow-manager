@@ -1,0 +1,63 @@
+.ediworman-checklist-status {
+  margin-bottom: 5px;
+}
+
+.ediworman-checklist-status-summary p {
+  margin: 0 0 4px;
+}
+
+.ediworman-checklist-status-summary p:last-child {
+  margin-bottom: 0;
+}
+
+.ediworman-checklist-optional-progress {
+  margin-top: 8px;
+}
+
+.ediworman-checklist-items {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+}
+
+.ediworman-checklist-item {
+  margin-bottom: 12px;
+}
+
+.ediworman-checklist-item__details {
+  font-size: 12px;
+  margin: -8px 0 0 24px;
+}
+
+.ediworman-checklist-item__summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.ediworman-checklist-item__summary:focus-visible,
+.ediworman-checklist-item__reference-link:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid #3858e9;
+  outline-offset: 2px;
+}
+
+.ediworman-checklist-item__description,
+.ediworman-checklist-item__reference {
+  margin: 6px 0;
+}
+
+.ediworman-checklist-item__description {
+  white-space: pre-wrap;
+}
+
+.ediworman-checklist-last-updated {
+  color: #50575e;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.ediworman-checklist-post-status.is-incomplete {
+  color: #b32d2e;
+  font-weight: 600;
+}

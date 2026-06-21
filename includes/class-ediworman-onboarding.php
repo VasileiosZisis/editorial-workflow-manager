@@ -180,7 +180,11 @@ class EDIWORMAN_Onboarding {
 							<?php esc_html_e( 'Only post types that support the block editor are shown here.', 'editorial-workflow-manager' ); ?>
 						</p>
 
-						<div class="ediworman-quickstart__post-types">
+						<div
+							class="ediworman-quickstart__post-types"
+							role="group"
+							aria-labelledby="ediworman-quickstart-step-post-types"
+						>
 							<?php foreach ( $post_types as $post_type => $post_type_object ) : ?>
 								<label class="ediworman-quickstart__choice">
 									<input
@@ -208,11 +212,16 @@ class EDIWORMAN_Onboarding {
 							<?php esc_html_e( 'You can change these mappings later in Settings -> Editorial Workflow.', 'editorial-workflow-manager' ); ?>
 						</p>
 
-						<div class="ediworman-quickstart__mappings">
+						<div
+							class="ediworman-quickstart__mappings"
+							role="group"
+							aria-labelledby="ediworman-quickstart-step-templates"
+						>
 							<?php foreach ( $post_types as $post_type => $post_type_object ) : ?>
 								<?php
 								$is_selected          = in_array( $post_type, $selected, true );
 								$selected_template_id = isset( $template_map[ $post_type ] ) ? (int) $template_map[ $post_type ] : 0;
+								$preview_id           = 'ediworman-quickstart-template-preview-' . $post_type;
 								?>
 								<div
 									class="ediworman-quickstart__mapping"
@@ -232,6 +241,7 @@ class EDIWORMAN_Onboarding {
 										id="ediworman-quickstart-template-<?php echo esc_attr( $post_type ); ?>"
 										name="ediworman_quickstart_templates[<?php echo esc_attr( $post_type ); ?>]"
 										data-template-select="<?php echo esc_attr( $post_type ); ?>"
+										aria-describedby="<?php echo esc_attr( $preview_id ); ?>"
 									>
 										<option value="0" data-preview="<?php echo esc_attr__( 'No template selected.', 'editorial-workflow-manager' ); ?>">
 											<?php esc_html_e( 'None', 'editorial-workflow-manager' ); ?>
@@ -247,7 +257,13 @@ class EDIWORMAN_Onboarding {
 											</option>
 										<?php endforeach; ?>
 									</select>
-									<p class="description" data-template-preview-for="<?php echo esc_attr( $post_type ); ?>">
+									<p
+										class="description"
+										id="<?php echo esc_attr( $preview_id ); ?>"
+										data-template-preview-for="<?php echo esc_attr( $post_type ); ?>"
+										aria-live="polite"
+										aria-atomic="true"
+									>
 										<?php echo esc_html( $this->get_template_preview_for_selection( $selected_template_id, $templates ) ); ?>
 									</p>
 								</div>
@@ -267,7 +283,13 @@ class EDIWORMAN_Onboarding {
 			</form>
 
 			<div class="ediworman-quickstart__actions">
-				<p class="ediworman-quickstart__actions-note" data-no-selection-message>
+				<p
+					class="ediworman-quickstart__actions-note"
+					data-no-selection-message
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
+				>
 					<?php esc_html_e( 'Select at least one post type to continue.', 'editorial-workflow-manager' ); ?>
 				</p>
 				<div class="ediworman-quickstart__actions-buttons">

@@ -322,110 +322,112 @@
     return el(
       PanelBody,
       { title: __('Checklist', 'editorial-workflow-manager'), initialOpen: true },
-		el(
-			'div',
-			{ style: { marginBottom: '5px' } },
-			el(
-				Notice,
+      el(
+        'div',
+        { className: 'ediworman-checklist-status' },
+        el(
+          Notice,
           {
             status: readinessBoolean ? 'success' : 'warning',
             isDismissible: false,
             className: 'ediworman-checklist-status-summary',
           },
           el(
-            'p',
-            { role: 'status', 'aria-live': 'polite' },
-            statusSummaryText,
+            'div',
+            {
+              role: 'status',
+              'aria-live': 'polite',
+              'aria-atomic': 'true',
+            },
+            el('p', null, statusSummaryText),
+            missingRequiredText && el('p', null, missingRequiredText),
           ),
-          missingRequiredText && el('p', null, missingRequiredText),
         ),
       ),
       optionalProgressText &&
         el(
           'p',
-          {
-            style: {
-              marginTop: '8px',
-            },
-          },
+          { className: 'ediworman-checklist-optional-progress' },
           optionalProgressText,
         ),
-      items.map((item) => {
-        const itemKey = item.id || item.label;
-        const label = item.required
-          ? item.label
-          : sprintf(
-              /* translators: 1: item label, 2: optional marker */
-              __('%1$s (%2$s)', 'editorial-workflow-manager'),
-              item.label,
-              __('Optional', 'editorial-workflow-manager'),
-            );
-        const hasDetails = !!item.description || !!item.url;
+      el(
+        'fieldset',
+        { className: 'ediworman-checklist-items' },
+        el(
+          'legend',
+          { className: 'screen-reader-text' },
+          __('Editorial checklist items', 'editorial-workflow-manager'),
+        ),
+        items.map((item) => {
+          const itemKey = item.id || item.label;
+          const label = item.required
+            ? item.label
+            : sprintf(
+                /* translators: 1: item label, 2: optional marker */
+                __('%1$s (%2$s)', 'editorial-workflow-manager'),
+                item.label,
+                __('Optional', 'editorial-workflow-manager'),
+              );
+          const hasDetails = !!item.description || !!item.url;
 
-        return el(
-          Fragment,
-          { key: itemKey },
-          el(CheckboxControl, {
-            label,
-            checked: isChecked(item),
-            onChange: () => toggleItem(item),
-          }),
-          hasDetails &&
-            el(
-              'details',
-              {
-                style: {
-                  margin: '-8px 0 12px 24px',
-                  fontSize: '12px',
-                },
-              },
+          return el(
+            'div',
+            { className: 'ediworman-checklist-item', key: itemKey },
+            el(CheckboxControl, {
+              label,
+              checked: isChecked(item),
+              onChange: () => toggleItem(item),
+            }),
+            hasDetails &&
               el(
-                'summary',
-                {
-                  style: {
-                    cursor: 'pointer',
-                  },
-                },
-                __('Details', 'editorial-workflow-manager'),
-              ),
-              item.description &&
+                'details',
+                { className: 'ediworman-checklist-item__details' },
                 el(
-                  'p',
+                  'summary',
                   {
-                    style: {
-                      margin: '6px 0',
-                      whiteSpace: 'pre-wrap',
-                    },
+                    className: 'ediworman-checklist-item__summary',
+                    'aria-label': sprintf(
+                      /* translators: %s: checklist item label */
+                      __('Details for %s', 'editorial-workflow-manager'),
+                      item.label,
+                    ),
                   },
-                  item.description,
+                  __('Details', 'editorial-workflow-manager'),
                 ),
-              item.url &&
-                el(
-                  'p',
-                  { style: { margin: '6px 0' } },
+                item.description &&
                   el(
-                    'a',
-                    {
-                      href: item.url,
-                      target: '_blank',
-                      rel: 'noopener noreferrer',
-                    },
-                    __('Reference', 'editorial-workflow-manager'),
+                    'p',
+                    { className: 'ediworman-checklist-item__description' },
+                    item.description,
                   ),
-                ),
-            ),
-        );
-      }),
+                item.url &&
+                  el(
+                    'p',
+                    { className: 'ediworman-checklist-item__reference' },
+                    el(
+                      'a',
+                      {
+                        className: 'ediworman-checklist-item__reference-link',
+                        href: item.url,
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                        'aria-label': sprintf(
+                          /* translators: %s: checklist item label */
+                          __('Reference for %s (opens in a new tab)', 'editorial-workflow-manager'),
+                          item.label,
+                        ),
+                      },
+                      __('Reference', 'editorial-workflow-manager'),
+                    ),
+                  ),
+              ),
+          );
+        }),
+      ),
       lastUpdatedText &&
         el(
           'p',
-          {
-            style: {
-              marginTop: '12px',
-              fontSize: '12px',
-              opacity: 0.7,
-            },
-          },
+          { className: 'ediworman-checklist-last-updated' },
           lastUpdatedTimeText
             ? sprintf(
                 /* translators: 1: last updated by text, 2: datetime string */
@@ -530,9 +532,9 @@
       el(
         'span',
         {
-          style: readinessBoolean
-            ? { color: 'inherit' }
-            : { color: '#d63638', fontWeight: '500' },
+          className: readinessBoolean
+            ? 'ediworman-checklist-post-status is-ready'
+            : 'ediworman-checklist-post-status is-incomplete',
         },
         text,
       ),
@@ -559,12 +561,20 @@
           status: 'warning',
           isDismissible: false,
         },
-        sprintf(
-          /* translators: 1: missing required count, 2: required done count, 3: required total count */
-          __('Incomplete: %1$d required item(s) missing (%2$d/%3$d complete). You can still publish, but review required items first.', 'editorial-workflow-manager'),
-          missingRequired,
-          requiredDone,
-          requiredTotal,
+        el(
+          'p',
+          {
+            role: 'status',
+            'aria-live': 'polite',
+            'aria-atomic': 'true',
+          },
+          sprintf(
+            /* translators: 1: missing required count, 2: required done count, 3: required total count */
+            __('Incomplete: %1$d required item(s) missing (%2$d/%3$d complete). You can still publish, but review required items first.', 'editorial-workflow-manager'),
+            missingRequired,
+            requiredDone,
+            requiredTotal,
+          ),
         ),
       ),
     );

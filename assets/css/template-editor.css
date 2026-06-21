@@ -1,0 +1,17 @@
+.ediworman-template-item-row:focus-within > td {
+  background: #f0f6fc;
+}
+
+.ediworman-template-item-row .button:focus-visible,
+.ediworman-template-item-row input:focus-visible,
+.ediworman-template-item-row select:focus-visible,
+.ediworman-template-item-row textarea:focus-visible,
+.ediworman-template-item-add:focus-visible {
+  outline: 2px solid #3858e9;
+  outline-offset: 2px;
+}
+
+.ediworman-template-item-error {
+  color: #b32d2e;
+  font-weight: 600;
+}

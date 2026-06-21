@@ -63,6 +63,13 @@ class EDIWORMAN_Editor_Assets {
 			return;
 		}
 
+		wp_enqueue_style(
+			'ediworman-sidebar',
+			EDIWORMAN_URL . 'assets/css/sidebar.css',
+			array(),
+			EDIWORMAN_VERSION
+		);
+
 		$template_id   = null;
 		$items         = array();
 		$template_mode = 'legacy';

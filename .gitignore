@@ -6,8 +6,6 @@ Thumbs.db
 .idea/
 .vscode/
 
-docs
-
 # Dependency directories
 vendor/
 node_modules/

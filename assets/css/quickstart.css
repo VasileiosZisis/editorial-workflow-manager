@@ -82,6 +82,19 @@
   padding: 14px 16px;
 }
 
+.ediworman-quickstart__choice:focus-within {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+  outline: 2px solid transparent;
+}
+
+.ediworman-quickstart__choice input:focus-visible,
+.ediworman-quickstart__mapping select:focus-visible,
+.ediworman-quickstart__actions-buttons .button:focus-visible {
+  outline: 2px solid #3858e9;
+  outline-offset: 2px;
+}
+
 .ediworman-quickstart__choice code {
   display: block;
   margin-top: 4px;
