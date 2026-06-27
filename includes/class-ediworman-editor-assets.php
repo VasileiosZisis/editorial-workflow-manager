@@ -29,6 +29,25 @@ class EDIWORMAN_Editor_Assets {
 	 * @return void
 	 */
 	public function enqueue() {
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+		if ( ! $screen || empty( $screen->post_type ) || 'post' !== $screen->base ) {
+			return;
+		}
+
+		$post_type = sanitize_key( $screen->post_type );
+		if (
+			! $post_type ||
+			! post_type_exists( $post_type ) ||
+			! post_type_supports( $post_type, 'editor' ) ||
+			! use_block_editor_for_post_type( $post_type )
+		) {
+			return;
+		}
+
 		wp_enqueue_script(
 			'ediworman-sidebar',
 			EDIWORMAN_URL . 'assets/js/sidebar.js',
@@ -47,20 +66,6 @@ class EDIWORMAN_Editor_Assets {
 
 		if ( function_exists( 'wp_set_script_translations' ) ) {
 			wp_set_script_translations( 'ediworman-sidebar', 'editorial-workflow-manager', EDIWORMAN_PATH . 'languages' );
-		}
-
-		if ( ! function_exists( 'get_current_screen' ) ) {
-			return;
-		}
-
-		$screen = get_current_screen();
-		if ( ! $screen || empty( $screen->post_type ) || 'post' !== $screen->base ) {
-			return;
-		}
-
-		$post_type = sanitize_key( $screen->post_type );
-		if ( ! $post_type || ! post_type_exists( $post_type ) ) {
-			return;
 		}
 
 		wp_enqueue_style(

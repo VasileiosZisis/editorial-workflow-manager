@@ -8,6 +8,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 - Checklist Template management is limited to users with page-management capabilities by default (typically Editors and Administrators).
 - Row-based template editor with add/remove/reorder controls.
 - Keyboard and screen-reader support across checklist and template workflows.
+- Editor assets and checklist state are scoped to avoid unnecessary admin work.
 - Duplicate action for quickly cloning checklist templates.
 - Required and optional checklist items.
 - Optional helper text and a reference URL per checklist item.

@@ -58,15 +58,14 @@
     };
   };
 
+  const checklistData = getChecklistData();
+
   const getChecklistSummary = ({
     templateMode,
     items,
-    checkedLabels,
-    checkedItemIds,
+    checkedLabelsSet,
+    checkedItemIdsSet,
   }) => {
-    const checkedLabelsSet = new Set(checkedLabels);
-    const checkedItemIdsSet = new Set(checkedItemIds);
-
     let totalItems = 0;
     let doneItems = 0;
     let requiredTotal = 0;
@@ -109,26 +108,47 @@
     };
   };
 
-  const useChecklist = () => {
-    const checklistData = useMemo(() => getChecklistData(), []);
-    const { templateMode, items } = checklistData;
-
-    const meta = useSelect(
-      (select) => select('core/editor').getEditedPostAttribute('meta') || {},
+  const useEditorState = () =>
+    useSelect(
+      (select) => ({
+        meta: select('core/editor').getEditedPostAttribute('meta') || {},
+        post: select('core/editor').getCurrentPost(),
+      }),
       [],
     );
 
-    const checkedLabels =
-      Array.isArray(meta._ediworman_checked_items)
-        ? meta._ediworman_checked_items.filter((value) => typeof value === 'string')
-        : [];
+  const useChecklist = (meta) => {
+    const { templateMode, items } = checklistData;
 
-    const checkedItemIds =
-      Array.isArray(meta._ediworman_checked_item_ids)
-        ? meta._ediworman_checked_item_ids
-            .filter((value) => typeof value === 'string')
-            .map((value) => value.toLowerCase())
-        : [];
+    const rawCheckedLabels = meta._ediworman_checked_items;
+    const rawCheckedItemIds = meta._ediworman_checked_item_ids;
+
+    const checkedLabels = useMemo(
+      () =>
+        Array.isArray(rawCheckedLabels)
+          ? rawCheckedLabels.filter((value) => typeof value === 'string')
+          : [],
+      [rawCheckedLabels],
+    );
+
+    const checkedItemIds = useMemo(
+      () =>
+        Array.isArray(rawCheckedItemIds)
+          ? rawCheckedItemIds
+              .filter((value) => typeof value === 'string')
+              .map((value) => value.toLowerCase())
+          : [],
+      [rawCheckedItemIds],
+    );
+
+    const checkedLabelsSet = useMemo(
+      () => new Set(checkedLabels),
+      [checkedLabels],
+    );
+    const checkedItemIdsSet = useMemo(
+      () => new Set(checkedItemIds),
+      [checkedItemIds],
+    );
 
     const { editPost } = useDispatch('core/editor');
 
@@ -137,18 +157,18 @@
         getChecklistSummary({
           templateMode,
           items,
-          checkedLabels,
-          checkedItemIds,
+          checkedLabelsSet,
+          checkedItemIdsSet,
         }),
-      [templateMode, items, checkedLabels, checkedItemIds],
+      [templateMode, items, checkedLabelsSet, checkedItemIdsSet],
     );
 
     const isChecked = (item) => {
       if (templateMode === 'v2') {
-        return !!item.id && checkedItemIds.includes(item.id);
+        return !!item.id && checkedItemIdsSet.has(item.id);
       }
 
-      return checkedLabels.includes(item.label);
+      return checkedLabelsSet.has(item.label);
     };
 
     const toggleItem = (item) => {
@@ -157,7 +177,7 @@
           return;
         }
 
-        const nextCheckedIds = new Set(checkedItemIds);
+        const nextCheckedIds = new Set(checkedItemIdsSet);
         if (nextCheckedIds.has(item.id)) {
           nextCheckedIds.delete(item.id);
         } else {
@@ -173,7 +193,7 @@
         return;
       }
 
-      const nextCheckedLabels = new Set(checkedLabels);
+      const nextCheckedLabels = new Set(checkedLabelsSet);
       if (nextCheckedLabels.has(item.label)) {
         nextCheckedLabels.delete(item.label);
       } else {
@@ -197,12 +217,7 @@
     };
   };
 
-  const usePostInfo = () => {
-    const meta = useSelect(
-      (select) => select('core/editor').getEditedPostAttribute('meta') || {},
-      [],
-    );
-
+  const usePostInfo = (meta, post) => {
     let lastEditorId = null;
     if (
       meta._ediworman_last_editor !== undefined &&
@@ -213,11 +228,6 @@
         lastEditorId = parsed;
       }
     }
-
-    const post = useSelect(
-      (select) => select('core/editor').getCurrentPost(),
-      [],
-    );
 
     const fallbackAuthorId = post && post.author ? post.author : null;
     const userIdToShow = lastEditorId || fallbackAuthorId;
@@ -254,7 +264,7 @@
     };
   };
 
-  const SidebarContent = () => {
+  const SidebarContent = ({ checklist, meta, post }) => {
     const {
       items,
       isChecked,
@@ -265,9 +275,9 @@
       missingRequired,
       optionalDone,
       optionalTotal,
-    } = useChecklist();
+    } = checklist;
 
-    const { lastUpdatedText, lastUpdatedTimeText } = usePostInfo();
+    const { lastUpdatedText, lastUpdatedTimeText } = usePostInfo(meta, post);
 
     if (!items.length) {
       return el(
@@ -440,7 +450,7 @@
     );
   };
 
-  const ChecklistStatusInfo = () => {
+  const ChecklistStatusInfo = ({ checklist }) => {
     const {
       items,
       readinessBoolean,
@@ -449,7 +459,7 @@
       missingRequired,
       optionalDone,
       optionalTotal,
-    } = useChecklist();
+    } = checklist;
 
     if (!items.length) {
       return null;
@@ -458,32 +468,6 @@
     const readinessLabel = readinessBoolean
       ? __('Ready', 'editorial-workflow-manager')
       : __('Incomplete', 'editorial-workflow-manager');
-
-    const requiredProgressText = sprintf(
-      /* translators: 1: required done count, 2: required total count */
-      __('Required %1$d/%2$d', 'editorial-workflow-manager'),
-      requiredDone,
-      requiredTotal,
-    );
-
-    const missingRequiredText =
-      missingRequired > 0
-        ? sprintf(
-            /* translators: %d: missing required item count */
-            __('Missing required: %d', 'editorial-workflow-manager'),
-            missingRequired,
-          )
-        : '';
-
-    const optionalProgressText =
-      optionalTotal > 0
-        ? sprintf(
-            /* translators: 1: optional done count, 2: optional total count */
-            __('Optional %1$d/%2$d', 'editorial-workflow-manager'),
-            optionalDone,
-            optionalTotal,
-          )
-        : '';
 
     let text = '';
     if (missingRequired > 0 && optionalTotal > 0) {
@@ -541,9 +525,9 @@
     );
   };
 
-  const ChecklistPrePublishPanel = () => {
+  const ChecklistPrePublishPanel = ({ checklist }) => {
     const { items, readinessBoolean, requiredDone, requiredTotal, missingRequired } =
-      useChecklist();
+      checklist;
 
     if (!items.length || readinessBoolean) {
       return null;
@@ -580,8 +564,11 @@
     );
   };
 
-  const EditorialChecklistPlugin = () =>
-    el(
+  const EditorialChecklistPlugin = () => {
+    const { meta, post } = useEditorState();
+    const checklist = useChecklist(meta);
+
+    return el(
       Fragment,
       null,
       el(
@@ -597,11 +584,12 @@
           icon: 'yes-alt',
           className: 'ediworman-checklist-sidebar',
         },
-        el(SidebarContent, null),
+        el(SidebarContent, { checklist, meta, post }),
       ),
-      el(ChecklistStatusInfo, null),
-      el(ChecklistPrePublishPanel, null),
+      el(ChecklistStatusInfo, { checklist }),
+      el(ChecklistPrePublishPanel, { checklist }),
     );
+  };
 
   registerPlugin('ediworman-checklist-plugin', {
     render: EditorialChecklistPlugin,

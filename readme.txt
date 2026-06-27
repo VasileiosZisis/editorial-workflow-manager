@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 0.10.0
+Stable tag: 0.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -108,6 +108,11 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 
 == Changelog ==
 
+= 0.11.0 =
+* Limited checklist editor assets to valid block-editor post screens and supported post types.
+* Consolidated duplicate Gutenberg editor subscriptions into one shared checklist state.
+* Memoized checked-item normalization and membership lookups without changing checklist behavior or storage.
+
 = 0.10.0 =
 * Improved keyboard and screen-reader support across the checklist sidebar, pre-publish warning, Quickstart, settings, and editor tour.
 * Added contextual template row actions, live reorder/add/remove announcements, deterministic focus handling, and associated validation errors.
@@ -162,6 +167,9 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 * First public release.
 
 == Upgrade Notice ==
+
+= 0.11.0 =
+Reduces unnecessary block-editor asset loading and repeated checklist calculations without changing existing workflows or data.
 
 = 0.10.0 =
 Improves keyboard navigation, screen-reader context, focus visibility, dynamic announcements, and template-editor validation without changing checklist data.
