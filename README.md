@@ -22,6 +22,8 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 - Curated starter templates created on activation and upgrade.
 - Fresh-install Quickstart wizard for initial setup.
 - One-time editor tour that opens and highlights the checklist sidebar.
+- Feedback links to the official WordPress.org support forum.
+- A per-user, dismissible WordPress.org review prompt after five unique checklist completions.
 - Translation-ready (`editorial-workflow-manager` text domain).
 
 ## Getting Started
@@ -39,6 +41,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 - Legacy checked state: `_ediworman_checked_items` (`array<string>` labels).
 - V2 checked state: `_ediworman_checked_item_ids` (`array<string>` UUIDs).
 - Readiness cache: `_ediworman_required_total_cache`, `_ediworman_required_done_cache`, `_ediworman_readiness_cache`.
+- Review prompt user state: up to five completed post IDs, a snooze timestamp, and a closed status.
 
 Legacy templates remain supported. When a legacy template is edited/saved in the row editor, it is upgraded to v2 and the legacy mirror meta remains written for compatibility.
 
@@ -50,3 +53,4 @@ Legacy templates remain supported. When a legacy template is edited/saved in the
 - Built for block editor (Gutenberg), not Classic Editor.
 - Readiness depends on required items only; optional items do not block completion.
 - Helper text and reference links are guidance only; they do not affect readiness.
+- Feedback and review features send no telemetry and contact WordPress.org only after an intentional link click.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Editorial Workflow Manager
  * Description: Add editorial checklists and approvals to the WordPress editor.
- * Version:     0.11.0
+ * Version:     0.12.0
  * Author:      Vasileios Zisis
  * Author URI:  https://profiles.wordpress.org/vzisis/
  * Text Domain: editorial-workflow-manager
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class EDIWORMAN_Plugin {
 
-	const VERSION = '0.11.0';
+	const VERSION = '0.12.0';
 
 	/**
 	 * Stored plugin version option name.
@@ -100,6 +100,13 @@ final class EDIWORMAN_Plugin {
 	private $list_table;
 
 	/**
+	 * Feedback links and review prompt handler.
+	 *
+	 * @var EDIWORMAN_Feedback
+	 */
+	private $feedback;
+
+	/**
 	 * Get plugin singleton instance.
 	 *
 	 * @return EDIWORMAN_Plugin
@@ -127,6 +134,7 @@ final class EDIWORMAN_Plugin {
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-onboarding.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-default-templates.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-list-table.php';
+		require_once EDIWORMAN_PATH . 'includes/class-ediworman-feedback.php';
 
 		// Instantiate.
 		$this->templates_cpt = new EDIWORMAN_Templates_CPT();
@@ -135,6 +143,7 @@ final class EDIWORMAN_Plugin {
 		$this->editor_assets = new EDIWORMAN_Editor_Assets();
 		$this->onboarding    = new EDIWORMAN_Onboarding();
 		$this->list_table    = is_admin() ? new EDIWORMAN_List_Table() : null;
+		$this->feedback      = new EDIWORMAN_Feedback();
 
 		EDIWORMAN_Readiness::register_hooks();
 

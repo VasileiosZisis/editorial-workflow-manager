@@ -6,8 +6,8 @@
     PluginPostStatusInfo,
     PluginPrePublishPanel,
   } = wp.editor;
-  const { PanelBody, CheckboxControl, Notice } = wp.components;
-  const { Fragment, createElement: el, useMemo } = wp.element;
+  const { PanelBody, CheckboxControl, Notice, Button } = wp.components;
+  const { Fragment, createElement: el, useMemo, useState } = wp.element;
   const { useSelect, useDispatch } = wp.data;
   const { __, sprintf } = wp.i18n;
 
@@ -59,6 +59,26 @@
   };
 
   const checklistData = getChecklistData();
+
+  const getFeedbackData = () => {
+    const rawData = window.EDIWORMAN_CHECKLIST_DATA || {};
+    const feedback =
+      rawData.feedback && typeof rawData.feedback === 'object'
+        ? rawData.feedback
+        : {};
+
+    return {
+      eligible: feedback.eligible === true,
+      reviewUrl:
+        typeof feedback.reviewUrl === 'string' ? feedback.reviewUrl : '',
+      ajaxUrl: typeof feedback.ajaxUrl === 'string' ? feedback.ajaxUrl : '',
+      ajaxAction:
+        typeof feedback.ajaxAction === 'string' ? feedback.ajaxAction : '',
+      nonce: typeof feedback.nonce === 'string' ? feedback.nonce : '',
+    };
+  };
+
+  const feedbackData = getFeedbackData();
 
   const getChecklistSummary = ({
     templateMode,
@@ -264,6 +284,123 @@
     };
   };
 
+  const ReviewPrompt = () => {
+    const [isVisible, setIsVisible] = useState(feedbackData.eligible);
+    const [isBusy, setIsBusy] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
+    if (!isVisible) {
+      return null;
+    }
+
+    const updatePreference = async (promptAction) => {
+      if (
+        isBusy ||
+        !feedbackData.ajaxUrl ||
+        !feedbackData.ajaxAction ||
+        !feedbackData.nonce
+      ) {
+        return;
+      }
+
+      setIsBusy(true);
+      setErrorMessage('');
+
+      const requestBody = new URLSearchParams({
+        action: feedbackData.ajaxAction,
+        nonce: feedbackData.nonce,
+        prompt_action: promptAction,
+      });
+
+      try {
+        const response = await window.fetch(feedbackData.ajaxUrl, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          },
+          body: requestBody.toString(),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result || result.success !== true) {
+          throw new Error('review-prompt-update-failed');
+        }
+
+        setIsVisible(false);
+      } catch (error) {
+        setErrorMessage(
+          __('The review preference could not be saved. Please try again.', 'editorial-workflow-manager'),
+        );
+        setIsBusy(false);
+      }
+    };
+
+    return el(
+      Notice,
+      {
+        status: 'info',
+        isDismissible: false,
+        className: 'ediworman-review-prompt',
+      },
+      el(
+        'p',
+        null,
+        el(
+          'strong',
+          null,
+          __('Enjoying Editorial Workflow Manager?', 'editorial-workflow-manager'),
+        ),
+      ),
+      el(
+        'p',
+        null,
+        __('You have completed several editorial checklists. A WordPress.org review would help other teams discover the plugin.', 'editorial-workflow-manager'),
+      ),
+      errorMessage &&
+        el(
+          'p',
+          { role: 'alert', className: 'ediworman-review-prompt__error' },
+          errorMessage,
+        ),
+      el(
+        'div',
+        { className: 'ediworman-review-prompt__actions' },
+        feedbackData.reviewUrl &&
+          el(
+            Button,
+            {
+              variant: 'primary',
+              href: feedbackData.reviewUrl,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              'aria-label': __('Leave a review (opens in a new tab)', 'editorial-workflow-manager'),
+              onClick: () => setIsVisible(false),
+            },
+            __('Leave a review', 'editorial-workflow-manager'),
+          ),
+        el(
+          Button,
+          {
+            variant: 'secondary',
+            disabled: isBusy,
+            onClick: () => updatePreference('snooze'),
+          },
+          __('Maybe later', 'editorial-workflow-manager'),
+        ),
+        el(
+          Button,
+          {
+            variant: 'tertiary',
+            disabled: isBusy,
+            onClick: () => updatePreference('dismiss'),
+          },
+          __('Do not ask again', 'editorial-workflow-manager'),
+        ),
+      ),
+    );
+  };
+
   const SidebarContent = ({ checklist, meta, post }) => {
     const {
       items,
@@ -360,6 +497,7 @@
           { className: 'ediworman-checklist-optional-progress' },
           optionalProgressText,
         ),
+      el(ReviewPrompt),
       el(
         'fieldset',
         { className: 'ediworman-checklist-items' },

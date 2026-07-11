@@ -94,6 +94,7 @@ class EDIWORMAN_Editor_Assets {
 				'postType'     => $post_type,
 				'templateMode' => $template_mode,
 				'items'        => $items,
+				'feedback'     => EDIWORMAN_Feedback::get_editor_data(),
 			)
 		);
 

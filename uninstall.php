@@ -36,6 +36,9 @@ function ediworman_uninstall_cleanup_site() {
 	// Remove onboarding dismissal flags.
 	delete_metadata( 'user', 0, 'ediworman_quickstart_dismissed_version', '', true );
 	delete_metadata( 'user', 0, 'ediworman_editor_tour_dismissed_version', '', true );
+	delete_metadata( 'user', 0, 'ediworman_review_completed_post_ids', '', true );
+	delete_metadata( 'user', 0, 'ediworman_review_prompt_snoozed_until', '', true );
+	delete_metadata( 'user', 0, 'ediworman_review_prompt_closed', '', true );
 
 	// Remove checklist template item meta (in case templates are left behind).
 	delete_post_meta_by_key( '_ediworman_items' );

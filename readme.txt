@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 0.11.0
+Stable tag: 0.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,7 @@ This plugin does not output anything on the front end.
 * Assign different **editorial checklists** to different post types.
 * Track per-post checklist progress in the editor sidebar.
 * See readiness and progress in the post list table, sidebar, post status panel, and pre-publish panel.
+* Send feedback through the official WordPress.org support forum.
 
 === Typical use cases ===
 
@@ -108,6 +109,11 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 
 == Changelog ==
 
+= 0.12.0 =
+* Added Feedback links on the Installed Plugins row and Editorial Workflow settings page.
+* Added a per-user WordPress.org review prompt after five unique posts reach Ready.
+* Added a 30-day snooze and permanent dismissal without telemetry or automatic external requests.
+
 = 0.11.0 =
 * Limited checklist editor assets to valid block-editor post screens and supported post types.
 * Consolidated duplicate Gutenberg editor subscriptions into one shared checklist state.
@@ -167,6 +173,9 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 * First public release.
 
 == Upgrade Notice ==
+
+= 0.12.0 =
+Adds passive WordPress.org feedback links and a dismissible, per-user review prompt after five checklist completions.
 
 = 0.11.0 =
 Reduces unnecessary block-editor asset loading and repeated checklist calculations without changing existing workflows or data.

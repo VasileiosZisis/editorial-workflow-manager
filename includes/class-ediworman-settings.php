@@ -195,6 +195,8 @@ class EDIWORMAN_Settings {
 
 				<?php submit_button(); ?>
 			</form>
+
+			<?php do_action( 'ediworman_after_settings_form' ); ?>
 		</div>
 		<?php
 	}
