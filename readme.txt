@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 0.12.0
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,48 +12,93 @@ Editorial checklist and pre-publish workflow for the WordPress editor. Create re
 
 == Description ==
 
-**Editorial Workflow Manager** adds an **editorial checklist** to the WordPress **block editor (Gutenberg)** so your team can follow a consistent **pre-publish checklist** every time you publish.
+**The Gutenberg editorial checklist for teams that want consistent publishing quality without a heavy workflow suite.**
 
-It’s built for content teams, agencies, and editors who want a lightweight **publishing checklist workflow** inside the editor — with clear “ready vs incomplete” feedback — **without hard publish blocking**.
+**Editorial Workflow Manager** helps content teams, editors, agencies, and multi-author WordPress sites follow a consistent pre-publish process directly inside the **WordPress block editor (Gutenberg)**.
 
-This plugin does not output anything on the front end.
+Create reusable editorial checklist templates, assign different checklists to different post types, and give authors a clear view of what is complete and what still needs attention before publishing.
 
-=== What you can do ===
+No complex workflow builder. No front-end output. No hard publish blocking.
 
-* Create reusable **checklist templates** (required + optional items).
-* Assign different **editorial checklists** to different post types.
-* Track per-post checklist progress in the editor sidebar.
-* See readiness and progress in the post list table, sidebar, post status panel, and pre-publish panel.
-* Send feedback through the official WordPress.org support forum.
+Just a focused editorial checklist workflow that helps your team publish with more consistency and fewer missed steps.
 
-=== Typical use cases ===
+=== Make your publishing process repeatable ===
 
-* Blog posts: SEO checks, featured image, categories/tags, internal links, fact check.
-* News/Editorial: legal review, source confirmation, editor sign-off checklist.
-* Agencies: client approvals checklist, accessibility checks, brand requirements.
-* Teams: consistent publishing workflow across authors and editors.
+Turn your editorial standards into reusable checklists that appear directly where your team writes and edits content.
 
-== Key features ==
+* Create reusable checklist templates.
+* Mark checklist items as **Required** or **Optional**.
+* Add helper text and optional reference links to individual items.
+* Assign different checklist templates to different post types.
+* Track checklist progress separately for every post or page.
+* Duplicate existing templates to create new workflows faster.
 
-* **Accessible workflows** - contextual labels, live status announcements, visible focus states, and keyboard-safe template controls.
-* **Template duplication** - clone checklist templates and customize the copy.
-* **Curated starter templates** - includes Blog SEO, News Fact-Check, Accessibility Review, and Client Approval templates.
-* **Checklist templates** – manage reusable checklists as a custom post type.
-* **Template editor (row-based UI)** – add, remove, reorder items; mark each item Required or Optional.
-* **Required vs Optional items** – readiness is based on required items only.
-* **Helper text + reference links** – add plain guidance text and an optional reference URL to each checklist item.
-* **Per-post checklist state** – each post/page stores its own checklist progress.
-* **Gutenberg / Block Editor sidebar** – “Editorial Checklist” panel inside the editor.
-* **Readiness + progress indicators**
-  * Sidebar summary with Ready / Incomplete and required progress
-  * wp-admin post list Readiness column for mapped post types
-  * Post Status panel summary while editing
-  * Non-blocking pre-publish warning when required items are missing
-* **Different checklist per post type** – assign templates in Settings.
-* **Curated starter templates included** on activation and upgrade.
-* **Fresh-install quickstart wizard** – choose post types, assign starter templates, and jump straight into the editor.
-* **Lightweight editor tour** – auto-open the checklist sidebar once and explain required-item readiness.
-* **Backward compatible upgrades** – legacy templates still work and upgrade to UUID-based v2 items when saved.
+Required items determine whether a post is shown as **Ready** or **Incomplete**, while optional items can provide additional guidance without affecting readiness.
+
+=== See what is ready to publish ===
+
+Editorial Workflow Manager gives authors and editors clear readiness feedback across the WordPress admin.
+
+* **Editorial Checklist sidebar** inside the block editor.
+* **Ready / Incomplete status** with required-item progress.
+* **Post Status panel** summary while editing.
+* **Pre-publish warning** when required items are still incomplete.
+* **Readiness column** in WordPress post lists for mapped post types.
+* **Readiness filters** for Ready, Incomplete, and Not calculated content.
+* **Missing required-item details** directly in post lists.
+* **Bulk and all-post readiness recalculation** for mapped post types.
+* **Editorial Readiness dashboard summary** for managers.
+
+The pre-publish warning is intentionally **non-blocking**. Your team stays informed without the plugin taking control of the WordPress publishing process.
+
+=== Get started quickly ===
+
+New installations include a guided setup experience designed to get teams working quickly.
+
+* **Quickstart wizard** for choosing post types and assigning checklist templates.
+* **One-time editor tour** introducing the checklist sidebar and readiness system.
+* **Curated starter templates** you can use as-is or customize:
+
+  * Blog SEO
+  * News Fact-Check
+  * Accessibility Review
+  * Client Approval
+
+You can edit, duplicate, and adapt these templates to match your own publishing standards.
+
+=== Built for real editorial workflows ===
+
+Use Editorial Workflow Manager for:
+
+* **Blogs and content teams** — SEO review steps, featured images, categories, links, fact-checking, and publishing standards.
+* **News and editorial sites** — source confirmation, fact-checking, legal review steps, and editor sign-off requirements.
+* **Agencies** — client review steps, accessibility checks, brand requirements, and delivery standards.
+* **Multi-author sites** — give every contributor the same clear publishing process.
+* **Custom post types** — assign the appropriate checklist to each supported content type.
+
+=== Key features ===
+
+* **Gutenberg-native workflow** — the checklist lives directly inside the WordPress block editor.
+* **Reusable checklist templates** — create a repeatable process once and use it across content.
+* **Required and Optional items** — distinguish publishing requirements from helpful guidance.
+* **Helper text and reference links** — give authors context without leaving the checklist.
+* **Checklist template duplication** — clone and customize existing workflows.
+* **Per-post checklist progress** — each post or page maintains its own completion state.
+* **Readiness tracking** — see Ready or Incomplete status throughout the editor and post list.
+* **Non-blocking pre-publish guidance** — warn authors about missing required items without preventing publication.
+* **Post-type mapping** — use different checklists for different types of content.
+* **Starter templates** — begin with practical workflows for blogging, fact-checking, accessibility, and client review.
+* **Quickstart onboarding** — configure the plugin and open the editor with less setup friction.
+* **Accessible workflows** — keyboard-friendly controls, visible focus states, contextual labels, and live status announcements.
+* **Backward-compatible upgrades** — existing checklist data and legacy templates remain supported.
+
+=== Lightweight by design ===
+
+Editorial Workflow Manager focuses on one job: helping WordPress teams follow a consistent editorial checklist before publishing.
+
+It does **not** add content to your site's front end, and it does not try to replace WordPress with a complex project-management or enterprise workflow system.
+
+Use it when you want a clear, practical publishing process directly inside Gutenberg.
 
 == Getting started ==
 
@@ -108,6 +153,12 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 5. wp-admin post list Readiness column showing checklist status for mapped post types.
 
 == Changelog ==
+
+= 1.0.0 =
+* Added exact Ready, Incomplete, and Not calculated filters to mapped post lists.
+* Added expandable missing required-item details to the Readiness column.
+* Added selected-post and batched all-post readiness recalculation tools.
+* Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 = 0.12.0 =
 * Added Feedback links on the Installed Plugins row and Editorial Workflow settings page.
@@ -173,6 +224,9 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 * First public release.
 
 == Upgrade Notice ==
+
+= 1.0.0 =
+Adds manager-focused readiness filters, missing-item details, recalculation tools, and a dashboard summary without changing checklist data.
 
 = 0.12.0 =
 Adds passive WordPress.org feedback links and a dismissible, per-user review prompt after five checklist completions.

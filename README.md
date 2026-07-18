@@ -15,6 +15,9 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 - Per-post checklist state in Gutenberg.
 - Clear readiness/progress indicators:
   - wp-admin post list Readiness column for mapped post types.
+  - Ready, Incomplete, and Not calculated post-list filters.
+  - Expandable missing required-item details.
+  - Manager dashboard readiness summary.
   - Sidebar summary.
   - Status and visibility panel.
   - Non-blocking pre-publish warning.
@@ -24,6 +27,7 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 - One-time editor tour that opens and highlights the checklist sidebar.
 - Feedback links to the official WordPress.org support forum.
 - A per-user, dismissible WordPress.org review prompt after five unique checklist completions.
+- Selected-post and batched all-post readiness recalculation tools.
 - Translation-ready (`editorial-workflow-manager` text domain).
 
 ## Getting Started

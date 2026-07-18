@@ -142,5 +142,32 @@ class EDIWORMAN_List_Table {
 			esc_html( $readiness_label ),
 			esc_html( $required_progress )
 		);
+
+		if ( EDIWORMAN_Readiness::READINESS_INCOMPLETE !== $readiness['readiness'] ) {
+			return;
+		}
+
+		$missing_labels = EDIWORMAN_Readiness::get_missing_required_item_labels( $post_id );
+		if ( empty( $missing_labels ) ) {
+			return;
+		}
+		?>
+		<details class="ediworman-missing-items">
+			<summary>
+				<?php
+				printf(
+					/* translators: %d: number of missing required checklist items. */
+					esc_html__( 'Missing required items (%d)', 'editorial-workflow-manager' ),
+					count( $missing_labels )
+				);
+				?>
+			</summary>
+			<ul>
+				<?php foreach ( $missing_labels as $missing_label ) : ?>
+					<li><?php echo esc_html( $missing_label ); ?></li>
+				<?php endforeach; ?>
+			</ul>
+		</details>
+		<?php
 	}
 }

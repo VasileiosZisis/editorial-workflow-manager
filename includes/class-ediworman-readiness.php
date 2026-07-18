@@ -403,12 +403,46 @@ class EDIWORMAN_Readiness {
 	}
 
 	/**
+	 * Return the labels of required checklist items that remain incomplete.
+	 *
+	 * @param int $post_id Content post ID.
+	 * @return array<int, string>
+	 */
+	public static function get_missing_required_item_labels( $post_id ) {
+		$evaluation = self::evaluate_readiness_for_post( $post_id );
+		if ( null === $evaluation ) {
+			return array();
+		}
+
+		return $evaluation['missing_required_labels'];
+	}
+
+	/**
 	 * Calculate readiness for a post without reading cache.
 	 *
 	 * @param int $post_id Content post ID.
 	 * @return array{required_total:int,required_done:int,readiness:string}|null
 	 */
 	private static function calculate_readiness_for_post( $post_id ) {
+		$evaluation = self::evaluate_readiness_for_post( $post_id );
+		if ( null === $evaluation ) {
+			return null;
+		}
+
+		return array(
+			'required_total' => $evaluation['required_total'],
+			'required_done'  => $evaluation['required_done'],
+			'readiness'      => $evaluation['readiness'],
+		);
+	}
+
+	/**
+	 * Evaluate readiness and missing required labels from one shared item walk.
+	 *
+	 * @param int $post_id Content post ID.
+	 * @return array{required_total:int,required_done:int,readiness:string,missing_required_labels:array<int,string>}|null
+	 */
+	private static function evaluate_readiness_for_post( $post_id ) {
 		$post_id   = absint( $post_id );
 		$post_type = get_post_type( $post_id );
 		if ( ! self::is_cacheable_post_type( $post_type ) ) {
@@ -424,6 +458,7 @@ class EDIWORMAN_Readiness {
 		$checked_item_ids = self::normalize_checked_item_ids( get_post_meta( $post_id, '_ediworman_checked_item_ids', true ) );
 		$required_total   = 0;
 		$required_done    = 0;
+		$missing_labels   = array();
 
 		foreach ( $template_data['items'] as $item ) {
 			if ( false === $item['required'] ) {
@@ -432,16 +467,16 @@ class EDIWORMAN_Readiness {
 
 			++$required_total;
 
-			if ( 'v2' === $template_data['template_mode'] ) {
-				if ( isset( $checked_item_ids[ $item['id'] ] ) ) {
-					++$required_done;
-				}
+			$is_checked = 'v2' === $template_data['template_mode']
+				? isset( $checked_item_ids[ $item['id'] ] )
+				: isset( $checked_labels[ $item['label'] ] );
+
+			if ( $is_checked ) {
+				++$required_done;
 				continue;
 			}
 
-			if ( isset( $checked_labels[ $item['label'] ] ) ) {
-				++$required_done;
-			}
+			$missing_labels[] = $item['label'];
 		}
 
 		$readiness = $required_done >= $required_total ? self::READINESS_READY : self::READINESS_INCOMPLETE;
@@ -450,6 +485,7 @@ class EDIWORMAN_Readiness {
 			'required_total' => $required_total,
 			'required_done'  => $required_done,
 			'readiness'      => $readiness,
+			'missing_required_labels' => $missing_labels,
 		);
 	}
 

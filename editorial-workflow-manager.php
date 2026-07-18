@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Editorial Workflow Manager
  * Description: Add editorial checklists and approvals to the WordPress editor.
- * Version:     0.12.0
+ * Version:     1.0.0
  * Author:      Vasileios Zisis
  * Author URI:  https://profiles.wordpress.org/vzisis/
  * Text Domain: editorial-workflow-manager
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class EDIWORMAN_Plugin {
 
-	const VERSION = '0.12.0';
+	const VERSION = '1.0.0';
 
 	/**
 	 * Stored plugin version option name.
@@ -107,6 +107,13 @@ final class EDIWORMAN_Plugin {
 	private $feedback;
 
 	/**
+	 * Manager readiness filters, tools, and dashboard handler.
+	 *
+	 * @var EDIWORMAN_Manager_Visibility|null
+	 */
+	private $manager_visibility;
+
+	/**
 	 * Get plugin singleton instance.
 	 *
 	 * @return EDIWORMAN_Plugin
@@ -135,6 +142,7 @@ final class EDIWORMAN_Plugin {
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-default-templates.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-list-table.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-feedback.php';
+		require_once EDIWORMAN_PATH . 'includes/class-ediworman-manager-visibility.php';
 
 		// Instantiate.
 		$this->templates_cpt = new EDIWORMAN_Templates_CPT();
@@ -144,6 +152,7 @@ final class EDIWORMAN_Plugin {
 		$this->onboarding    = new EDIWORMAN_Onboarding();
 		$this->list_table    = is_admin() ? new EDIWORMAN_List_Table() : null;
 		$this->feedback      = new EDIWORMAN_Feedback();
+		$this->manager_visibility = is_admin() ? new EDIWORMAN_Manager_Visibility() : null;
 
 		EDIWORMAN_Readiness::register_hooks();
 

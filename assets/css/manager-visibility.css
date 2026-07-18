@@ -1,0 +1,36 @@
+.ediworman-missing-items {
+  margin-top: 6px;
+}
+
+.ediworman-missing-items summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.ediworman-missing-items summary:focus-visible,
+#ediworman-recalculate-all:focus-visible,
+.ediworman-readiness-summary a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid #3858e9;
+  outline-offset: 2px;
+}
+
+.ediworman-missing-items ul {
+  list-style: disc;
+  margin: 6px 0 0 18px;
+}
+
+.ediworman-recalculation-status {
+  display: inline-block;
+  margin: 5px 0 0 8px;
+  vertical-align: top;
+}
+
+.ediworman-readiness-summary th,
+.ediworman-readiness-summary td {
+  vertical-align: middle;
+}
+
+.ediworman-readiness-summary td {
+  text-align: center;
+}
