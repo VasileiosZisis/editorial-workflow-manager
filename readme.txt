@@ -150,7 +150,8 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 2. Checklist template editor with required/optional items and reorder controls.
 3. Settings screen for assigning checklist templates to post types.
 4. Pre-publish checklist warning when required items are missing.
-5. wp-admin post list Readiness column showing checklist status for mapped post types.
+5. wp-admin post list with readiness filters, expanded missing-item details, and recalculation controls.
+6. Editorial Readiness dashboard summary with Ready, Incomplete, and Not calculated counts.
 
 == Changelog ==
 
