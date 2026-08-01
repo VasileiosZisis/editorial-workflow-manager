@@ -4,15 +4,16 @@ This document consolidates the paid-feature recommendations from:
 
 - [Competitive Research Report](deep-research-report.md)
 - [Competitive Analysis v2](deep-research-report-v2.md)
+- [Competitive Research and Free/Pro Packaging Analysis v3](deep-research-report-v3.md)
 
 It defines the proposed **Pro core** and the optional **Agency**, **Publisher**, and **Compliance** packs. Competitor features mentioned only as market context are not automatically included; this plan contains the features the reports recommend for Editorial Workflow Manager.
 
 ## Product boundary
 
-The paid product should extend the free plugin from **editorial consistency** into **automation, accountability, scale, and governance**.
+The paid product should extend the free plugin from **baseline editorial validation** into **organization-specific policy, accountability, portability, scale, and governance**.
 
-- **Free** remains a complete, lightweight Gutenberg checklist and readiness product.
-- **Pro** adds automated validation, enforcement, approvals, notifications, portability, integrations, and support.
+- **Free** remains a complete, lightweight Gutenberg checklist and readiness product, with the planned Automated Requirements Lite rules, a public rule API, and an optional basic post-type publication gate.
+- **Pro** adds advanced validation, granular enforcement, approvals, notifications, portability, integrations, and support.
 - **Agency Pack** adds multi-site reuse, client review, branding, and agency-scale administration.
 - **Publisher Pack** adds pipeline planning, assignments, schedules, queues, and workload visibility.
 - **Compliance Pack** adds controlled approvals, durable evidence, retention, and audit exports.
@@ -21,23 +22,23 @@ Paid functionality must be delivered in a separate Pro add-on or other WordPress
 
 ## Pro core
 
-### 1. Automated Requirements rule engine
+### 1. Advanced Automated Requirements
 
-Add machine-verifiable checklist items alongside the existing manual items.
+Build organization-specific validation on the rule engine and public extension contract planned for Free.
 
-Initial rule library:
+Pro rule library:
 
-- Featured image is present.
-- Excerpt is present.
-- Minimum word count.
 - Maximum word count.
 - H1 count.
-- Minimum or maximum category count.
-- Minimum or maximum tag count.
-- Image alternative text is present.
+- Configurable minimum or maximum category count beyond basic presence.
+- Configurable minimum or maximum tag count beyond basic presence.
 - Minimum internal-link count.
 - Required date field is populated.
 - Required author field is populated.
+- Advanced alternative-text length and conditional accessibility rules.
+- Conditional rules.
+- No-code custom rule composition.
+- Rules backed by supported external-plugin data.
 
 Rule-engine behavior:
 
@@ -46,17 +47,15 @@ Rule-engine behavior:
 - Clearly distinguish automatic results from manually completed items.
 - Re-evaluate when relevant post data changes.
 - Cache results without allowing stale results to bypass server-side enforcement.
-- Provide an extensible PHP and JavaScript rule registry for future integrations.
-- Allow third-party extensions to register additional validation rules.
+- Extend the Free PHP and JavaScript rule registry without changing its result semantics.
+- Fail safely when an integration is missing, disabled, or returns unavailable data.
 
 ### 2. Enforcement and policy modes
 
-Allow each workflow to choose how incomplete requirements affect publishing.
+Build granular policy controls on the planned Free Advisory / Block setting.
 
-- **Advisory:** show readiness guidance without interrupting publishing.
 - **Warning:** require explicit confirmation before continuing.
-- **Restrict publishing:** prevent publication until required items and rules pass.
-- Configure the mode by post type, template, or role.
+- Configure Advisory, Warning, or Restrict modes by template, post type, or role.
 - Enforce restricted publishing on the server as well as in the editor UI.
 - Define role-based bypass permissions.
 - Optionally require a reason when an authorized user bypasses a gate.
@@ -288,9 +287,9 @@ The Compliance Pack should focus on **controlled sign-off, audit readiness, dura
 ### Phase 1: Pro foundation
 
 1. Pro add-on architecture, compatibility checks, capabilities, and migrations.
-2. Automated Requirements engine with core WordPress rules.
-3. Advisory, warning, and restrict-publishing modes.
-4. Server-side enforcement and role-based bypass policies.
+2. Advanced rules built on the Free rule engine and registration API.
+3. Per-template and per-role Advisory, Warning, and Restrict policies.
+4. Role-based bypass permissions, reasons, and audit recording.
 
 ### Phase 2: Accountability
 

@@ -47,7 +47,8 @@ Current release: **1.0.0**
 - [WordPress.org listing and release history](readme.txt)
 - [Original competitive research](docs/deep-research-report.md)
 - [Competitive research v2](docs/deep-research-report-v2.md)
-- [Free-version recommendations](docs/version-2-recommendations.md)
+- [Competitive research v3](docs/deep-research-report-v3.md)
+- [Current free-plugin recommendations (v3)](docs/version-3-recommendations.md)
 - [Planned Pro feature catalog](docs/pro-version-features.md)
 
 The research and Pro documents are planning materials. Only the features listed under **Free Version Features** are included in the current plugin.
