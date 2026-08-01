@@ -1,6 +1,10 @@
 # Editorial Workflow Manager
 
-Editorial Workflow Manager adds editorial checklists to the WordPress block editor so teams can run a consistent pre-publish workflow.
+**The Gutenberg editorial checklist for teams that want consistent publishing quality without a heavy workflow suite.**
+
+Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
+
+Current release: **1.0.0**
 
 ## Free Version Features
 
@@ -37,6 +41,16 @@ Editorial Workflow Manager adds editorial checklists to the WordPress block edit
 3. Open the post editor from the wizard and follow the one-time sidebar tour.
 4. Adjust template mappings later in `Settings -> Editorial Workflow`.
 5. Complete required items until the readiness UI reports the checklist is ready.
+
+## Documentation and Roadmap
+
+- [WordPress.org listing and release history](readme.txt)
+- [Original competitive research](docs/deep-research-report.md)
+- [Competitive research v2](docs/deep-research-report-v2.md)
+- [Free-version recommendations](docs/version-2-recommendations.md)
+- [Planned Pro feature catalog](docs/pro-version-features.md)
+
+The research and Pro documents are planning materials. Only the features listed under **Free Version Features** are included in the current plugin.
 
 ## Data Model (Backward Compatible)
 
