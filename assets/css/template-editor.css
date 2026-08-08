@@ -15,3 +15,32 @@
   color: #b32d2e;
   font-weight: 600;
 }
+
+.ediworman-automatic-requirements {
+  border-top: 1px solid #c3c4c7;
+  margin-top: 20px;
+  padding-top: 4px;
+}
+
+.ediworman-automatic-requirement {
+  border-top: 1px solid #dcdcde;
+  padding: 12px 0;
+}
+
+.ediworman-automatic-requirement:first-of-type {
+  border-top: 0;
+}
+
+.ediworman-automatic-requirement__setting {
+  display: inline-block;
+  margin-left: 16px;
+}
+
+.ediworman-automatic-requirement .description {
+  margin: 4px 0 0 24px;
+}
+
+.ediworman-automatic-requirement input:focus-visible {
+  outline: 2px solid #3858e9;
+  outline-offset: 2px;
+}

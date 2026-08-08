@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.0.0**
+Current release: **1.1.0**
 
 ## Free Version Features
 
@@ -15,6 +15,8 @@ Current release: **1.0.0**
 - Editor assets and checklist state are scoped to avoid unnecessary admin work.
 - Duplicate action for quickly cloning checklist templates.
 - Required and optional checklist items.
+- Five configurable automatic requirements: featured image, excerpt, minimum word count, category/tag presence, and image alternative-text coverage.
+- Live automatic-result status in the block-editor sidebar.
 - Optional helper text and a reference URL per checklist item.
 - Per-post checklist state in Gutenberg.
 - Clear readiness/progress indicators:
@@ -57,6 +59,7 @@ The research and Pro documents are planning materials. Only the features listed 
 
 - Legacy template items: `_ediworman_items` (`array<string>` labels).
 - V2 template items: `_ediworman_items_v2` (`array<{id,label,description,url,required}>`) where `id` is UUID.
+- Automatic template requirements: `_ediworman_automatic_requirements` (fixed built-in rule configuration, including the minimum word threshold).
 - Legacy checked state: `_ediworman_checked_items` (`array<string>` labels).
 - V2 checked state: `_ediworman_checked_item_ids` (`array<string>` UUIDs).
 - Readiness cache: `_ediworman_required_total_cache`, `_ediworman_required_done_cache`, `_ediworman_readiness_cache`.
@@ -70,6 +73,8 @@ Legacy templates remain supported. When a legacy template is edited/saved in the
 - No front-end output; behavior is admin/editor only.
 - By default, only Editors and Administrators can create, edit, or delete Checklist Templates.
 - Built for block editor (Gutenberg), not Classic Editor.
-- Readiness depends on required items only; optional items do not block completion.
+- Readiness depends on required manual items and enabled, applicable automatic requirements; optional items do not block completion.
+- Existing templates keep automatic requirements disabled until an editor enables them. Unsupported rules are excluded for the mapped post type.
+- The image alternative-text rule treats empty values and unavailable attachment records as incomplete; templates using intentionally decorative images can leave that rule disabled.
 - Helper text and reference links are guidance only; they do not affect readiness.
 - Feedback and review features send no telemetry and contact WordPress.org only after an intentional link click.

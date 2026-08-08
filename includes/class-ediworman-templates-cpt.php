@@ -326,6 +326,8 @@ class EDIWORMAN_Templates_CPT {
 			</p>
 		</div>
 
+		<?php $this->render_automatic_requirements( $post->ID ); ?>
+
 		<template id="ediworman-template-item-row-template">
 			<?php
 			$this->render_item_row(
@@ -340,6 +342,70 @@ class EDIWORMAN_Templates_CPT {
 			);
 			?>
 		</template>
+		<?php
+	}
+
+	/**
+	 * Render configurable built-in automatic requirements.
+	 *
+	 * @param int $template_id Checklist template ID.
+	 * @return void
+	 */
+	private function render_automatic_requirements( $template_id ) {
+		$config      = EDIWORMAN_Automatic_Requirements::get_template_config( $template_id );
+		$definitions = EDIWORMAN_Automatic_Requirements::get_rule_definitions();
+		?>
+		<section class="ediworman-automatic-requirements" aria-labelledby="ediworman-automatic-requirements-heading">
+			<input type="hidden" name="ediworman_automatic_requirements_present" value="1" />
+			<h3 id="ediworman-automatic-requirements-heading">
+				<?php esc_html_e( 'Automatic requirements', 'editorial-workflow-manager' ); ?>
+			</h3>
+			<p>
+				<?php esc_html_e( 'Enable lightweight checks that update automatically from post content and settings. They count as required and cannot be checked manually.', 'editorial-workflow-manager' ); ?>
+			</p>
+
+			<?php foreach ( $definitions as $rule_key => $definition ) : ?>
+				<?php
+				$rule_id        = 'ediworman-automatic-requirement-' . $rule_key;
+				$description_id = $rule_id . '-description';
+				$enabled        = ! empty( $config[ $rule_key ]['enabled'] );
+				?>
+				<div class="ediworman-automatic-requirement">
+					<label for="<?php echo esc_attr( $rule_id ); ?>">
+						<input
+							type="checkbox"
+							id="<?php echo esc_attr( $rule_id ); ?>"
+							name="ediworman_automatic_requirements[<?php echo esc_attr( $rule_key ); ?>][enabled]"
+							value="1"
+							aria-describedby="<?php echo esc_attr( $description_id ); ?>"
+							<?php checked( $enabled ); ?>
+						/>
+						<strong><?php echo esc_html( $definition['label'] ); ?></strong>
+					</label>
+
+					<?php if ( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT === $rule_key ) : ?>
+						<?php $minimum_id = $rule_id . '-minimum'; ?>
+						<label class="ediworman-automatic-requirement__setting" for="<?php echo esc_attr( $minimum_id ); ?>">
+							<?php esc_html_e( 'Required words', 'editorial-workflow-manager' ); ?>
+							<input
+								type="number"
+								class="small-text"
+								id="<?php echo esc_attr( $minimum_id ); ?>"
+								name="ediworman_automatic_requirements[<?php echo esc_attr( $rule_key ); ?>][minimum]"
+								value="<?php echo esc_attr( (string) $config[ $rule_key ]['minimum'] ); ?>"
+								min="1"
+								max="<?php echo esc_attr( (string) EDIWORMAN_Automatic_Requirements::MAXIMUM_WORDS ); ?>"
+								step="1"
+							/>
+						</label>
+					<?php endif; ?>
+
+					<p class="description" id="<?php echo esc_attr( $description_id ); ?>">
+						<?php echo esc_html( $definition['description'] ); ?>
+					</p>
+				</div>
+			<?php endforeach; ?>
+		</section>
 		<?php
 	}
 
@@ -498,37 +564,65 @@ class EDIWORMAN_Templates_CPT {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as array shape, then unslashed and sanitized via map_deep below.
-		if ( ! isset( $_POST['ediworman_template_items'] ) || ! is_array( $_POST['ediworman_template_items'] ) ) {
-			return;
+		$raw_automatic_requirements = array();
+		if (
+			isset( $_POST['ediworman_automatic_requirements_present'] ) &&
+			isset( $_POST['ediworman_automatic_requirements'] ) &&
+			is_array( $_POST['ediworman_automatic_requirements'] )
+		) {
+			$raw_automatic_requirements = map_deep(
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nested values are unslashed and sanitized immediately.
+				wp_unslash( $_POST['ediworman_automatic_requirements'] ),
+				static function ( $value ) {
+					return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : $value;
+				}
+			);
 		}
 
-		$raw_items = map_deep(
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately by map_deep callback.
-			wp_unslash( $_POST['ediworman_template_items'] ),
-			static function ( $value ) {
-				return is_scalar( $value ) ? sanitize_textarea_field( (string) $value ) : $value;
+		$automatic_requirements = EDIWORMAN_Automatic_Requirements::sanitize_config( $raw_automatic_requirements );
+		$has_automatic_rules    = false;
+		foreach ( $automatic_requirements as $automatic_requirement ) {
+			if ( ! empty( $automatic_requirement['enabled'] ) ) {
+				$has_automatic_rules = true;
+				break;
 			}
-		);
-		if ( ! $this->is_items_request_shape_valid( $raw_items ) ) {
+		}
+
+		$items_v2 = array();
+		if ( isset( $_POST['ediworman_template_items'] ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The nested value is validated as an array before it is unslashed and sanitized below.
+			if ( ! is_array( $_POST['ediworman_template_items'] ) ) {
+				return;
+			}
+
+			$raw_items = map_deep(
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately by map_deep callback.
+				wp_unslash( $_POST['ediworman_template_items'] ),
+				static function ( $value ) {
+					return is_scalar( $value ) ? sanitize_textarea_field( (string) $value ) : $value;
+				}
+			);
+			if ( ! $this->is_items_request_shape_valid( $raw_items ) ) {
+				return;
+			}
+
+			$items_v2 = $this->parse_items_v2_from_request( $raw_items );
+		}
+
+		if ( empty( $items_v2 ) && ! $has_automatic_rules ) {
 			return;
 		}
 
-		$items_v2 = $this->parse_items_v2_from_request( $raw_items );
-
-		if ( empty( $items_v2 ) ) {
-			return;
-		}
-
-		$legacy_labels = array_map(
-			static function ( $item ) {
-				return $item['label'];
-			},
-			$items_v2
-		);
+		$legacy_labels = wp_list_pluck( $items_v2, 'label' );
 
 		update_post_meta( $post_id, '_ediworman_items_v2', $items_v2 );
 		update_post_meta( $post_id, '_ediworman_items', $legacy_labels );
+
+		update_post_meta(
+			$post_id,
+			EDIWORMAN_Automatic_Requirements::META_KEY,
+			$automatic_requirements
+		);
 	}
 
 	/**
@@ -552,6 +646,13 @@ class EDIWORMAN_Templates_CPT {
 
 		$duplicate_id = (int) $duplicate_id;
 		$items_v2     = $this->get_existing_items_v2( $template->ID );
+		$automatic_requirements = EDIWORMAN_Automatic_Requirements::get_template_config( $template->ID );
+
+		update_post_meta(
+			$duplicate_id,
+			EDIWORMAN_Automatic_Requirements::META_KEY,
+			$automatic_requirements
+		);
 
 		if ( ! empty( $items_v2 ) ) {
 			$duplicated_items = $this->regenerate_item_ids( $items_v2 );

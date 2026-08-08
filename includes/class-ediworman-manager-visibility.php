@@ -195,13 +195,16 @@ class EDIWORMAN_Manager_Visibility {
 			return;
 		}
 
+		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Admin-only exact filtering over the plugin's existing bounded readiness-cache keys.
 		$existing_meta_query = $query->get( 'meta_query' );
 		if ( ! is_array( $existing_meta_query ) || empty( $existing_meta_query ) ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Admin-only exact filtering over the plugin's existing bounded readiness-cache keys.
 			$query->set( 'meta_query', $readiness_clause );
 			return;
 		}
 
 		$query->set(
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Preserves third-party meta filters while adding the bounded readiness-cache clause.
 			'meta_query',
 			array(
 				'relation' => 'AND',
@@ -227,15 +230,21 @@ class EDIWORMAN_Manager_Visibility {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only result count from the nonce-protected core bulk action.
-		$raw_recalculated = isset( $_GET['ediworman_recalculated'] ) ? wp_unslash( $_GET['ediworman_recalculated'] ) : null;
+		$has_recalculated = isset( $_GET['ediworman_recalculated'] );
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only result count from the nonce-protected core bulk action.
-		$raw_skipped = isset( $_GET['ediworman_recalculation_skipped'] ) ? wp_unslash( $_GET['ediworman_recalculation_skipped'] ) : 0;
-		$recalculated = is_scalar( $raw_recalculated ) ? absint( $raw_recalculated ) : null;
-		$skipped      = is_scalar( $raw_skipped ) ? absint( $raw_skipped ) : 0;
+		$recalculated_value = $has_recalculated ? sanitize_text_field( wp_unslash( $_GET['ediworman_recalculated'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only result count from the nonce-protected core bulk action.
+		$skipped_value = isset( $_GET['ediworman_recalculation_skipped'] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only result count from the nonce-protected core bulk action.
+			? sanitize_text_field( wp_unslash( $_GET['ediworman_recalculation_skipped'] ) )
+			: '0';
 
-		if ( null === $recalculated ) {
+		if ( ! $has_recalculated || ! ctype_digit( $recalculated_value ) ) {
 			return;
 		}
+
+		$recalculated = absint( $recalculated_value );
+		$skipped      = ctype_digit( $skipped_value ) ? absint( $skipped_value ) : 0;
 
 		$notice_message = sprintf(
 			/* translators: 1: recalculated post count, 2: skipped post count. */
@@ -381,10 +390,9 @@ class EDIWORMAN_Manager_Visibility {
 	public function handle_ajax_recalculation() {
 		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
 
-		$raw_post_type = isset( $_POST['post_type'] ) && is_scalar( $_POST['post_type'] )
-			? wp_unslash( $_POST['post_type'] )
+		$post_type = isset( $_POST['post_type'] )
+			? sanitize_key( sanitize_text_field( wp_unslash( $_POST['post_type'] ) ) )
 			: '';
-		$post_type     = sanitize_key( $raw_post_type );
 		$post_type_obj = get_post_type_object( $post_type );
 
 		if ( ! $post_type_obj || empty( $post_type_obj->cap->edit_others_posts ) || ! current_user_can( $post_type_obj->cap->edit_others_posts ) ) {
@@ -395,8 +403,15 @@ class EDIWORMAN_Manager_Visibility {
 			wp_send_json_error( array( 'message' => esc_html__( 'This post type does not have a checklist template.', 'editorial-workflow-manager' ) ), 400 );
 		}
 
-		$raw_cursor = isset( $_POST['cursor'] ) ? wp_unslash( $_POST['cursor'] ) : 0;
-		$cursor     = is_scalar( $raw_cursor ) ? absint( $raw_cursor ) : 0;
+		$cursor_value = isset( $_POST['cursor'] )
+			? sanitize_text_field( wp_unslash( $_POST['cursor'] ) )
+			: '0';
+
+		if ( ! ctype_digit( $cursor_value ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Invalid recalculation cursor.', 'editorial-workflow-manager' ) ), 400 );
+		}
+
+		$cursor   = absint( $cursor_value );
 		$post_ids = $this->get_recalculation_batch( $post_type, $cursor );
 		$processed = 0;
 		$skipped   = 0;
@@ -506,8 +521,10 @@ class EDIWORMAN_Manager_Visibility {
 	 */
 	private function get_requested_readiness_filter() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list-table filter.
-		$raw_value = isset( $_GET[ self::FILTER_QUERY_ARG ] ) ? wp_unslash( $_GET[ self::FILTER_QUERY_ARG ] ) : '';
-		$value     = is_scalar( $raw_value ) ? sanitize_key( $raw_value ) : '';
+		$value = isset( $_GET[ self::FILTER_QUERY_ARG ] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list-table filter.
+			? sanitize_key( sanitize_text_field( wp_unslash( $_GET[ self::FILTER_QUERY_ARG ] ) ) )
+			: '';
 		return in_array( $value, array( self::FILTER_READY, self::FILTER_INCOMPLETE, self::FILTER_UNCALCULATED ), true ) ? $value : '';
 	}
 
@@ -644,6 +661,7 @@ class EDIWORMAN_Manager_Visibility {
 				'posts_per_page'         => 1,
 				'fields'                 => 'ids',
 				'no_found_rows'          => false,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Dashboard counts query the plugin's bounded readiness-cache keys only on wp-admin.
 				'meta_query'             => $this->get_readiness_meta_clause( $filter ),
 				'update_post_meta_cache' => false,
 				'update_post_term_cache' => false,

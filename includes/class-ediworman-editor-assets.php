@@ -59,6 +59,7 @@ class EDIWORMAN_Editor_Assets {
 				'wp-components',
 				'wp-data',
 				'wp-core-data',
+				'wp-blocks',
 			),
 			EDIWORMAN_VERSION,
 			true
@@ -78,12 +79,17 @@ class EDIWORMAN_Editor_Assets {
 		$template_id   = null;
 		$items         = array();
 		$template_mode = 'legacy';
+		$automatic_data = array(
+			'rules'             => array(),
+			'taxonomyRestBases' => array(),
+		);
 		$template_data = EDIWORMAN_Readiness::get_template_data_for_post_type( $post_type );
 
 		if ( null !== $template_data ) {
 			$template_id   = $template_data['template_id'];
 			$template_mode = $template_data['template_mode'];
 			$items         = $template_data['items'];
+			$automatic_data = EDIWORMAN_Automatic_Requirements::get_editor_data( $template_id, $post_type );
 		}
 
 		wp_localize_script(
@@ -94,6 +100,8 @@ class EDIWORMAN_Editor_Assets {
 				'postType'     => $post_type,
 				'templateMode' => $template_mode,
 				'items'        => $items,
+				'automaticRequirements' => $automatic_data['rules'],
+				'taxonomyRestBases'     => $automatic_data['taxonomyRestBases'],
 				'feedback'     => EDIWORMAN_Feedback::get_editor_data(),
 			)
 		);

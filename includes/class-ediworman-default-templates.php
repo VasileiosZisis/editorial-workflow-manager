@@ -57,19 +57,26 @@ class EDIWORMAN_Default_Templates {
 	/**
 	 * Return starter checklist template definitions.
 	 *
-	 * @return array<string, array{mode:string, items:array<int, string|array{label:string, description:string, required:bool}>}>
+	 * @return array<string, array{mode:string, items:array<int, string|array{label:string, description:string, required:bool}>, automatic_requirements?:array<string,array{enabled:bool,minimum?:int}>}>
 	 */
 	private static function get_template_definitions() {
 		return array(
 			'Blog Post SOP'            => array(
-				'mode'  => 'legacy',
-				'items' => array(
-					'Set featured image',
-					'Write excerpt / meta description',
+				'mode'                   => 'legacy',
+				'items'                  => array(
 					'Add at least 2 internal links',
 					'Check external links (open in new tab if needed)',
 					'Spellcheck and grammar check',
-					'Confirm category and tags',
+				),
+				'automatic_requirements' => array(
+					'featured_image'     => array( 'enabled' => true ),
+					'excerpt'            => array( 'enabled' => true ),
+					'minimum_word_count' => array(
+						'enabled' => true,
+						'minimum' => 300,
+					),
+					'taxonomy_presence'  => array( 'enabled' => true ),
+					'image_alt_text'     => array( 'enabled' => true ),
 				),
 			),
 			'Landing Page QA'          => array(
@@ -276,6 +283,14 @@ class EDIWORMAN_Default_Templates {
 			}
 		} else {
 			update_post_meta( $template_id, '_ediworman_items', array_map( 'sanitize_text_field', $items ) );
+		}
+
+		if ( isset( $definition['automatic_requirements'] ) && is_array( $definition['automatic_requirements'] ) ) {
+			update_post_meta(
+				$template_id,
+				EDIWORMAN_Automatic_Requirements::META_KEY,
+				EDIWORMAN_Automatic_Requirements::sanitize_config( $definition['automatic_requirements'] )
+			);
 		}
 
 		return $template_id;

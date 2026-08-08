@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,18 @@ Turn your editorial standards into reusable checklists that appear directly wher
 * Duplicate existing templates to create new workflows faster.
 
 Required items determine whether a post is shown as **Ready** or **Incomplete**, while optional items can provide additional guidance without affecting readiness.
+
+=== Automate common content checks ===
+
+Templates can include five lightweight automatic requirements alongside manual checklist items:
+
+* **Featured image present**.
+* **Excerpt present**.
+* **Configurable minimum word count**.
+* **Category or tag present**.
+* **Image alternative-text coverage** for featured and content images.
+
+Automatic requirements update live in the block-editor sidebar and count toward the same readiness status, post-list details, filters, recalculation tools, and dashboard totals. Existing templates remain unchanged until an editor enables the checks. Rules that a mapped post type cannot support are ignored rather than treated as failed.
 
 === See what is ready to publish ===
 
@@ -81,6 +93,7 @@ Use Editorial Workflow Manager for:
 * **Gutenberg-native workflow** — the checklist lives directly inside the WordPress block editor.
 * **Reusable checklist templates** — create a repeatable process once and use it across content.
 * **Required and Optional items** — distinguish publishing requirements from helpful guidance.
+* **Automatic requirements** — check featured images, excerpts, word count, category/tag presence, and image alternative text without manual confirmation.
 * **Helper text and reference links** — give authors context without leaving the checklist.
 * **Checklist template duplication** — clone and customize existing workflows.
 * **Per-post checklist progress** — each post or page maintains its own completion state.
@@ -136,6 +149,11 @@ Yes. Assign templates in **Settings → Editorial Workflow**.
 = Do optional items affect readiness? =
 No. Readiness is based on **REQUIRED** items only.
 
+= How do automatic requirements affect readiness? =
+Each enabled and applicable automatic requirement counts as a required item. It updates from the current post content and settings, cannot be checked manually, and appears in the same readiness summaries and missing-item details as manual requirements. Existing templates do not enable these rules automatically.
+
+The image alternative-text rule treats empty alternative text and unavailable attachment records as incomplete, and identifies the featured image or content-image position that needs attention. Leave that rule disabled on templates where intentionally decorative images with empty alternative text are common.
+
 = What happens to older templates/checklist data? =
 Legacy templates and label-based checked state remain supported.
 
@@ -154,6 +172,12 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 6. Editorial Readiness dashboard summary with Ready, Incomplete, and Not calculated counts.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added five configurable automatic requirements for featured images, excerpts, minimum word count, category/tag presence, and image alternative text.
+* Added live automatic-result status to the block-editor checklist sidebar.
+* Integrated automatic results with readiness caches, post-list details and filters, recalculation tools, and dashboard counts.
+* Kept existing templates unchanged and excluded unsupported rules from readiness evaluation.
 
 = 1.0.0 =
 * Added exact Ready, Incomplete, and Not calculated filters to mapped post lists.
@@ -225,6 +249,9 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 * First public release.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Adds opt-in automatic content requirements that use the existing readiness workflow. Existing templates and post readiness remain unchanged until rules are enabled.
 
 = 1.0.0 =
 Adds manager-focused readiness filters, missing-item details, recalculation tools, and a dashboard summary without changing checklist data.

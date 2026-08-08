@@ -22,7 +22,7 @@ class EDIWORMAN_Readiness {
 	const READINESS_INCOMPLETE = 'incomplete';
 
 	const CACHE_SCHEMA_VERSION_OPTION = 'ediworman_readiness_cache_version';
-	const CACHE_SCHEMA_VERSION        = '2';
+	const CACHE_SCHEMA_VERSION        = '3';
 
 	/**
 	 * Register readiness-related hooks.
@@ -36,6 +36,8 @@ class EDIWORMAN_Readiness {
 		add_action( 'added_post_meta', array( __CLASS__, 'handle_checklist_meta_change' ), 10, 4 );
 		add_action( 'updated_post_meta', array( __CLASS__, 'handle_checklist_meta_change' ), 10, 4 );
 		add_action( 'deleted_post_meta', array( __CLASS__, 'handle_checklist_meta_change' ), 10, 4 );
+		add_action( 'set_object_terms', array( __CLASS__, 'handle_object_terms_change' ), 10, 6 );
+		add_action( 'delete_attachment', array( __CLASS__, 'handle_attachment_delete' ) );
 		add_action( 'updated_option', array( __CLASS__, 'handle_settings_option_updated' ), 10, 3 );
 		add_action( 'added_option', array( __CLASS__, 'handle_settings_option_added' ), 10, 2 );
 	}
@@ -83,9 +85,7 @@ class EDIWORMAN_Readiness {
 			return;
 		}
 
-		foreach ( self::get_cache_meta_keys() as $meta_key ) {
-			delete_post_meta_by_key( $meta_key );
-		}
+		self::clear_all_caches();
 
 		update_option( self::CACHE_SCHEMA_VERSION_OPTION, self::CACHE_SCHEMA_VERSION );
 	}
@@ -122,7 +122,12 @@ class EDIWORMAN_Readiness {
 	public static function handle_checklist_meta_change( $meta_id, $post_id, $meta_key, $meta_value ) {
 		unset( $meta_id, $meta_value );
 
-		if ( ! in_array( $meta_key, array( '_ediworman_checked_items', '_ediworman_checked_item_ids' ), true ) ) {
+		if ( '_wp_attachment_image_alt' === $meta_key ) {
+			self::clear_all_caches();
+			return;
+		}
+
+		if ( ! in_array( $meta_key, array( '_ediworman_checked_items', '_ediworman_checked_item_ids', '_thumbnail_id' ), true ) ) {
 			return;
 		}
 
@@ -137,6 +142,42 @@ class EDIWORMAN_Readiness {
 		}
 
 		self::refresh_cache_for_post( $post_id );
+	}
+
+	/**
+	 * Refresh readiness after categories or tags change.
+	 *
+	 * @param int              $object_id  Object ID.
+	 * @param array|string|int $terms      Submitted terms.
+	 * @param array<int,int>   $tt_ids     Term taxonomy IDs.
+	 * @param string           $taxonomy   Taxonomy slug.
+	 * @param bool             $append     Whether terms were appended.
+	 * @param array<int,int>   $old_tt_ids Previous term taxonomy IDs.
+	 * @return void
+	 */
+	public static function handle_object_terms_change( $object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ) {
+		unset( $terms, $tt_ids, $append, $old_tt_ids );
+
+		if ( ! in_array( $taxonomy, array( 'category', 'post_tag' ), true ) ) {
+			return;
+		}
+
+		$object_id = absint( $object_id );
+		$post_type = get_post_type( $object_id );
+		if ( $object_id <= 0 || ! self::is_cacheable_post_type( $post_type ) || ! self::should_show_column_for_post_type( $post_type ) ) {
+			return;
+		}
+
+		self::refresh_cache_for_post( $object_id );
+	}
+
+	/**
+	 * Invalidate readiness caches when an attachment is permanently deleted.
+	 *
+	 * @return void
+	 */
+	public static function handle_attachment_delete() {
+		self::clear_all_caches();
 	}
 
 	/**
@@ -194,7 +235,7 @@ class EDIWORMAN_Readiness {
 	 * Return normalized template data for a mapped post type.
 	 *
 	 * @param string $post_type Post type slug.
-	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,description:string,url:string,required:bool}>}|null
+	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,description:string,url:string,required:bool}>,automatic_requirements:array<string,array{enabled:bool,minimum?:int}>}|null
 	 */
 	public static function get_template_data_for_post_type( $post_type ) {
 		$post_type = sanitize_key( $post_type );
@@ -271,6 +312,17 @@ class EDIWORMAN_Readiness {
 
 		foreach ( self::get_cache_meta_keys() as $meta_key ) {
 			delete_post_meta( $post_id, $meta_key );
+		}
+	}
+
+	/**
+	 * Delete all readiness caches without recalculating posts.
+	 *
+	 * @return void
+	 */
+	public static function clear_all_caches() {
+		foreach ( self::get_cache_meta_keys() as $meta_key ) {
+			delete_post_meta_by_key( $meta_key );
 		}
 	}
 
@@ -479,6 +531,32 @@ class EDIWORMAN_Readiness {
 			$missing_labels[] = $item['label'];
 		}
 
+		$automatic_results = EDIWORMAN_Automatic_Requirements::evaluate_post(
+			$post_id,
+			$template_data['automatic_requirements']
+		);
+
+		foreach ( $automatic_results as $automatic_result ) {
+			++$required_total;
+
+			if ( ! empty( $automatic_result['passed'] ) ) {
+				++$required_done;
+				continue;
+			}
+
+			$missing_label = $automatic_result['label'];
+			if ( ! empty( $automatic_result['message'] ) ) {
+				$missing_label = sprintf(
+					/* translators: 1: automatic requirement label, 2: actionable failure explanation. */
+					__( '%1$s: %2$s', 'editorial-workflow-manager' ),
+					$missing_label,
+					$automatic_result['message']
+				);
+			}
+
+			$missing_labels[] = $missing_label;
+		}
+
 		$readiness = $required_done >= $required_total ? self::READINESS_READY : self::READINESS_INCOMPLETE;
 
 		return array(
@@ -542,7 +620,7 @@ class EDIWORMAN_Readiness {
 	 * Return normalized template data for a template ID.
 	 *
 	 * @param int $template_id Template post ID.
-	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,description:string,url:string,required:bool}>}|null
+	 * @return array{template_id:int,template_mode:string,items:array<int,array{id:string,label:string,description:string,url:string,required:bool}>,automatic_requirements:array<string,array{enabled:bool,minimum?:int}>}|null
 	 */
 	private static function get_template_data( $template_id ) {
 		$template_id = absint( $template_id );
@@ -558,18 +636,20 @@ class EDIWORMAN_Readiness {
 		$items_v2 = get_post_meta( $template_id, '_ediworman_items_v2', true );
 		if ( is_array( $items_v2 ) ) {
 			return array(
-				'template_id'    => $template_id,
-				'template_mode'  => 'v2',
-				'items'          => self::normalize_v2_items( $items_v2 ),
+				'template_id'            => $template_id,
+				'template_mode'          => 'v2',
+				'items'                  => self::normalize_v2_items( $items_v2 ),
+				'automatic_requirements' => EDIWORMAN_Automatic_Requirements::get_template_config( $template_id ),
 			);
 		}
 
 		$legacy_items = get_post_meta( $template_id, '_ediworman_items', true );
 
 		return array(
-			'template_id'    => $template_id,
-			'template_mode'  => 'legacy',
-			'items'          => self::normalize_legacy_items( $legacy_items ),
+			'template_id'            => $template_id,
+			'template_mode'          => 'legacy',
+			'items'                  => self::normalize_legacy_items( $legacy_items ),
+			'automatic_requirements' => EDIWORMAN_Automatic_Requirements::get_template_config( $template_id ),
 		);
 	}
 

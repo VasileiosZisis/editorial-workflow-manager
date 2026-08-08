@@ -21,6 +21,56 @@
   padding: 0;
 }
 
+.ediworman-automatic-requirements {
+  border: 0;
+  border-top: 1px solid #dcdcde;
+  margin: 16px 0 0;
+  min-inline-size: 0;
+  padding: 16px 0 0;
+}
+
+.ediworman-automatic-requirements__legend {
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.ediworman-automatic-requirement {
+  align-items: flex-start;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ediworman-automatic-requirement__icon {
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: inline-flex;
+  flex: 0 0 20px;
+  font-size: 12px;
+  font-weight: 700;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ediworman-automatic-requirement.is-passed
+  .ediworman-automatic-requirement__icon {
+  color: #008a20;
+}
+
+.ediworman-automatic-requirement.is-failed
+  .ediworman-automatic-requirement__icon {
+  color: #b32d2e;
+}
+
+.ediworman-automatic-requirement__content p {
+  color: #50575e;
+  font-size: 12px;
+  margin: 2px 0 0;
+}
+
 .ediworman-checklist-item {
   margin-bottom: 12px;
 }

@@ -329,6 +329,11 @@
   form.addEventListener('submit', (event) => {
     const rows = getRows();
     let firstInvalidInput = null;
+    const hasEnabledAutomaticRequirement = Array.from(
+      form.querySelectorAll(
+        '.ediworman-automatic-requirement input[type="checkbox"]',
+      ),
+    ).some((input) => input instanceof HTMLInputElement && input.checked);
 
     rows.forEach((row) => {
       const input = row.querySelector('.ediworman-template-item-label');
@@ -338,6 +343,20 @@
 
       const value = input.value.trim();
       if (!value) {
+        const description = row.querySelector(
+          '.ediworman-template-item-description',
+        );
+        const url = row.querySelector('.ediworman-template-item-url');
+        const hasPartialContent =
+          (description instanceof HTMLTextAreaElement &&
+            !!description.value.trim()) ||
+          (url instanceof HTMLInputElement && !!url.value.trim());
+
+        if (hasEnabledAutomaticRequirement && !hasPartialContent) {
+          clearRowError(row);
+          return;
+        }
+
         setRowError(row, messages.emptyLabel);
         if (!firstInvalidInput) {
           firstInvalidInput = input;

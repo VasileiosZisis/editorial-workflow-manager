@@ -10,6 +10,7 @@
   const { Fragment, createElement: el, useMemo, useState } = wp.element;
   const { useSelect, useDispatch } = wp.data;
   const { __, sprintf } = wp.i18n;
+  const { parse: parseBlocks } = wp.blocks;
 
   const UUID_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -18,6 +19,13 @@
     const rawData = window.EDIWORMAN_CHECKLIST_DATA || {};
     const templateMode = rawData.templateMode === 'v2' ? 'v2' : 'legacy';
     const rawItems = Array.isArray(rawData.items) ? rawData.items : [];
+    const supportedAutomaticRequirements = new Set([
+      'featured_image',
+      'excerpt',
+      'minimum_word_count',
+      'taxonomy_presence',
+      'image_alt_text',
+    ]);
 
     const items = rawItems
       .map((item) => {
@@ -52,13 +60,55 @@
       })
       .filter(Boolean);
 
+    const automaticRequirements = Array.isArray(rawData.automaticRequirements)
+      ? rawData.automaticRequirements
+          .map((rule) => {
+            if (
+              !rule ||
+              typeof rule !== 'object' ||
+              typeof rule.key !== 'string' ||
+              !supportedAutomaticRequirements.has(rule.key) ||
+              typeof rule.label !== 'string' ||
+              !rule.label.trim()
+            ) {
+              return null;
+            }
+
+            const normalizedRule = {
+              key: rule.key,
+              label: rule.label.trim(),
+            };
+
+            if (rule.key === 'minimum_word_count') {
+              const minimum = parseInt(rule.minimum, 10);
+              normalizedRule.minimum =
+                !Number.isNaN(minimum) && minimum > 0 ? minimum : 300;
+            }
+
+            return normalizedRule;
+          })
+          .filter(Boolean)
+      : [];
+
+    const taxonomyRestBases = Array.isArray(rawData.taxonomyRestBases)
+      ? rawData.taxonomyRestBases.filter(
+          (restBase) =>
+            typeof restBase === 'string' && /^[a-z0-9_-]+$/.test(restBase),
+        )
+      : [];
+
     return {
       templateMode,
       items,
+      automaticRequirements,
+      taxonomyRestBases,
     };
   };
 
   const checklistData = getChecklistData();
+  const automaticRuleKeys = new Set(
+    checklistData.automaticRequirements.map((rule) => rule.key),
+  );
 
   const getFeedbackData = () => {
     const rawData = window.EDIWORMAN_CHECKLIST_DATA || {};
@@ -80,11 +130,162 @@
 
   const feedbackData = getFeedbackData();
 
+  const getImagesFromHtml = (html) => {
+    if (typeof html !== 'string' || !html) {
+      return [];
+    }
+
+    const imageTags = html.match(/<img\b[^>]*>/gi) || [];
+
+    return imageTags.map((imageTag) => {
+      const idMatch = imageTag.match(/\bwp-image-(\d+)\b/i);
+      const altMatch = imageTag.match(/\balt\s*=\s*(["'])([\s\S]*?)\1/i);
+      return {
+        id: idMatch ? parseInt(idMatch[1], 10) : 0,
+        alt: altMatch ? altMatch[2] : '',
+      };
+    });
+  };
+
+  const collectImagesFromBlocks = (blocks, images) => {
+    if (!Array.isArray(blocks)) {
+      return;
+    }
+
+    blocks.forEach((block) => {
+      if (!block || typeof block !== 'object') {
+        return;
+      }
+
+      if (block.name === 'core/image') {
+        const attributes = block.attributes || {};
+        const htmlImage = getImagesFromHtml(block.originalContent || '')[0] || {
+          id: 0,
+          alt: '',
+        };
+        images.push({
+          id: Number.isInteger(attributes.id) ? attributes.id : htmlImage.id,
+          alt:
+            typeof attributes.alt === 'string' ? attributes.alt : htmlImage.alt,
+        });
+        return;
+      }
+
+      images.push(...getImagesFromHtml(block.originalContent || ''));
+
+      if (Array.isArray(block.innerBlocks) && block.innerBlocks.length) {
+        collectImagesFromBlocks(block.innerBlocks, images);
+      }
+    });
+  };
+
+  const getContentImages = (content) => {
+    const images = [];
+
+    try {
+      collectImagesFromBlocks(parseBlocks(content || ''), images);
+    } catch (error) {
+      return getImagesFromHtml(content || '');
+    }
+
+    return images.map((image, index) => ({
+      ...image,
+      source: sprintf(
+        /* translators: %d: image position in post content */
+        __('Content image %d', 'editorial-workflow-manager'),
+        index + 1,
+      ),
+    }));
+  };
+
+  const countWords = (content) => {
+    const text = String(content || '')
+      .replace(/\[[^\]]*\]/g, ' ')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&(?:#\d+|#x[a-f0-9]+|[a-z][a-z0-9]+);/gi, ' ');
+    const matches = text.match(/[\p{L}\p{N}]+(?:[\u2019'-][\p{L}\p{N}]+)*/gu);
+    return matches ? matches.length : 0;
+  };
+
+  const evaluateAutomaticRequirements = (state) => {
+    const { automaticRequirements } = checklistData;
+    const imageSummary = state.images.reduce(
+      (summary, image) => {
+        const mediaAlt = image.id > 0 ? state.mediaAlts[image.id] || '' : '';
+        const hasAlt = !!String(image.alt || mediaAlt).trim();
+        return {
+          total: summary.total + 1,
+          missing: summary.missing + (hasAlt ? 0 : 1),
+          missingLabels: hasAlt
+            ? summary.missingLabels
+            : [...summary.missingLabels, image.source],
+        };
+      },
+      { total: 0, missing: 0, missingLabels: [] },
+    );
+
+    return automaticRequirements.map((rule) => {
+      let passed = false;
+      let message = '';
+
+      switch (rule.key) {
+        case 'featured_image':
+          passed = state.featuredMediaId > 0;
+          message = passed
+            ? __('Featured image detected.', 'editorial-workflow-manager')
+            : __('Add a featured image.', 'editorial-workflow-manager');
+          break;
+        case 'excerpt':
+          passed = !!state.excerpt.replace(/<[^>]*>/g, '').trim();
+          message = passed
+            ? __('Excerpt detected.', 'editorial-workflow-manager')
+            : __('Add a manual excerpt.', 'editorial-workflow-manager');
+          break;
+        case 'minimum_word_count': {
+          const wordCount = countWords(state.content);
+          passed = wordCount >= rule.minimum;
+          message = sprintf(
+            /* translators: 1: current word count, 2: required minimum word count */
+            __('%1$d of %2$d required words.', 'editorial-workflow-manager'),
+            wordCount,
+            rule.minimum,
+          );
+          break;
+        }
+        case 'taxonomy_presence':
+          passed = Object.values(state.taxonomyTerms).some(
+            (terms) => Array.isArray(terms) && terms.length > 0,
+          );
+          message = passed
+            ? __('Category or tag detected.', 'editorial-workflow-manager')
+            : __('Assign at least one category or tag.', 'editorial-workflow-manager');
+          break;
+        case 'image_alt_text':
+          passed = imageSummary.missing === 0;
+          message = passed
+            ? sprintf(
+                /* translators: %d: number of images checked */
+                __('%d image(s) checked.', 'editorial-workflow-manager'),
+                imageSummary.total,
+              )
+            : sprintf(
+                /* translators: %s: comma-separated image locations missing alternative text */
+                __('Add alternative text to: %s.', 'editorial-workflow-manager'),
+                imageSummary.missingLabels.join(', '),
+              );
+          break;
+      }
+
+      return { ...rule, passed, message };
+    });
+  };
+
   const getChecklistSummary = ({
     templateMode,
     items,
     checkedLabelsSet,
     checkedItemIdsSet,
+    automaticResults,
   }) => {
     let totalItems = 0;
     let doneItems = 0;
@@ -111,10 +312,20 @@
       }
     });
 
-    const missingRequired = Math.max(0, requiredTotal - requiredDone);
-    const readinessBoolean = requiredTotal === 0 || missingRequired === 0;
     const optionalTotal = Math.max(0, totalItems - requiredTotal);
     const optionalDone = Math.max(0, doneItems - requiredDone);
+
+    automaticResults.forEach((result) => {
+      totalItems += 1;
+      requiredTotal += 1;
+      if (result.passed) {
+        doneItems += 1;
+        requiredDone += 1;
+      }
+    });
+
+    const missingRequired = Math.max(0, requiredTotal - requiredDone);
+    const readinessBoolean = requiredTotal === 0 || missingRequired === 0;
 
     return {
       totalItems,
@@ -125,19 +336,97 @@
       readinessBoolean,
       optionalTotal,
       optionalDone,
+      automaticResults,
+      hasRequirements: totalItems > 0,
     };
   };
 
   const useEditorState = () =>
-    useSelect(
-      (select) => ({
-        meta: select('core/editor').getEditedPostAttribute('meta') || {},
-        post: select('core/editor').getCurrentPost(),
-      }),
-      [],
-    );
+    useSelect((select) => {
+      const editor = select('core/editor');
+      const hasAutomaticRequirements = automaticRuleKeys.size > 0;
+      const needsContent =
+        automaticRuleKeys.has('minimum_word_count') ||
+        automaticRuleKeys.has('image_alt_text');
+      const rawContent = needsContent
+        ? editor.getEditedPostAttribute('content')
+        : '';
+      const content =
+        typeof rawContent === 'string'
+          ? rawContent
+          : rawContent && typeof rawContent.raw === 'string'
+            ? rawContent.raw
+            : '';
+      const featuredMediaId = parseInt(
+        hasAutomaticRequirements &&
+          (automaticRuleKeys.has('featured_image') ||
+            automaticRuleKeys.has('image_alt_text'))
+          ? editor.getEditedPostAttribute('featured_media')
+          : 0,
+        10,
+      );
+      const images = automaticRuleKeys.has('image_alt_text')
+        ? getContentImages(content)
+        : [];
 
-  const useChecklist = (meta) => {
+      if (!Number.isNaN(featuredMediaId) && featuredMediaId > 0) {
+        images.unshift({
+          id: featuredMediaId,
+          alt: '',
+          source: __('Featured image', 'editorial-workflow-manager'),
+        });
+      }
+
+      const mediaAlts = {};
+      if (automaticRuleKeys.has('image_alt_text')) {
+        const core = select('core');
+        images.forEach((image) => {
+          if (!image.id || mediaAlts[image.id] !== undefined) {
+            return;
+          }
+
+          const media = core.getMedia(image.id);
+          mediaAlts[image.id] =
+            media && typeof media.alt_text === 'string' ? media.alt_text : '';
+        });
+      }
+
+      const taxonomyTerms = {};
+      if (automaticRuleKeys.has('taxonomy_presence')) {
+        checklistData.taxonomyRestBases.forEach((restBase) => {
+          const terms = editor.getEditedPostAttribute(restBase);
+          taxonomyTerms[restBase] = Array.isArray(terms) ? terms : [];
+        });
+      }
+
+      const rawExcerpt = automaticRuleKeys.has('excerpt')
+        ? editor.getEditedPostAttribute('excerpt')
+        : '';
+      const excerpt =
+        typeof rawExcerpt === 'string'
+          ? rawExcerpt
+          : rawExcerpt && typeof rawExcerpt.raw === 'string'
+            ? rawExcerpt.raw
+            : '';
+
+      return {
+        meta: editor.getEditedPostAttribute('meta') || {},
+        post: editor.getCurrentPost(),
+        automaticState: {
+          content,
+          excerpt,
+          featuredMediaId:
+            !Number.isNaN(featuredMediaId) && featuredMediaId > 0
+              ? featuredMediaId
+              : 0,
+          images,
+          mediaAlts,
+          taxonomyTerms,
+        },
+      };
+    }, []);
+
+  const useChecklist = (meta, automaticState) => {
     const { templateMode, items } = checklistData;
 
     const rawCheckedLabels = meta._ediworman_checked_items;
@@ -172,6 +461,11 @@
 
     const { editPost } = useDispatch('core/editor');
 
+    const automaticResults = useMemo(
+      () => evaluateAutomaticRequirements(automaticState),
+      [automaticState],
+    );
+
     const summary = useMemo(
       () =>
         getChecklistSummary({
@@ -179,8 +473,15 @@
           items,
           checkedLabelsSet,
           checkedItemIdsSet,
+          automaticResults,
         }),
-      [templateMode, items, checkedLabelsSet, checkedItemIdsSet],
+      [
+        templateMode,
+        items,
+        checkedLabelsSet,
+        checkedItemIdsSet,
+        automaticResults,
+      ],
     );
 
     const isChecked = (item) => {
@@ -412,18 +713,20 @@
       missingRequired,
       optionalDone,
       optionalTotal,
+      automaticResults,
+      hasRequirements,
     } = checklist;
 
     const { lastUpdatedText, lastUpdatedTimeText } = usePostInfo(meta, post);
 
-    if (!items.length) {
+    if (!hasRequirements) {
       return el(
         PanelBody,
         { title: __('Checklist', 'editorial-workflow-manager'), initialOpen: true },
         el(
           Notice,
           { status: 'info', isDismissible: false },
-          __('No checklist template is configured for this post type.', 'editorial-workflow-manager'),
+          __('No checklist requirements are configured for this post type.', 'editorial-workflow-manager'),
         ),
       );
     }
@@ -498,15 +801,16 @@
           optionalProgressText,
         ),
       el(ReviewPrompt),
-      el(
-        'fieldset',
-        { className: 'ediworman-checklist-items' },
+      items.length > 0 &&
         el(
-          'legend',
-          { className: 'screen-reader-text' },
-          __('Editorial checklist items', 'editorial-workflow-manager'),
-        ),
-        items.map((item) => {
+          'fieldset',
+          { className: 'ediworman-checklist-items' },
+          el(
+            'legend',
+            { className: 'screen-reader-text' },
+            __('Editorial checklist items', 'editorial-workflow-manager'),
+          ),
+          items.map((item) => {
           const itemKey = item.id || item.label;
           const label = item.required
             ? item.label
@@ -570,8 +874,50 @@
                   ),
               ),
           );
-        }),
-      ),
+          }),
+        ),
+      automaticResults.length > 0 &&
+        el(
+          'fieldset',
+          { className: 'ediworman-automatic-requirements' },
+          el(
+            'legend',
+            { className: 'ediworman-automatic-requirements__legend' },
+            __('Automatic requirements', 'editorial-workflow-manager'),
+          ),
+          automaticResults.map((result) =>
+            el(
+              'div',
+              {
+                className: result.passed
+                  ? 'ediworman-automatic-requirement is-passed'
+                  : 'ediworman-automatic-requirement is-failed',
+                key: result.key,
+              },
+              el(
+                'span',
+                {
+                  className: 'ediworman-automatic-requirement__icon',
+                  'aria-hidden': 'true',
+                },
+                result.passed ? '\u2713' : '!',
+              ),
+              el(
+                'div',
+                { className: 'ediworman-automatic-requirement__content' },
+                el('strong', null, result.label),
+                el(
+                  'span',
+                  { className: 'screen-reader-text' },
+                  result.passed
+                    ? __('Passed.', 'editorial-workflow-manager')
+                    : __('Needs attention.', 'editorial-workflow-manager'),
+                ),
+                el('p', null, result.message),
+              ),
+            ),
+          ),
+        ),
       lastUpdatedText &&
         el(
           'p',
@@ -590,7 +936,7 @@
 
   const ChecklistStatusInfo = ({ checklist }) => {
     const {
-      items,
+      hasRequirements,
       readinessBoolean,
       requiredDone,
       requiredTotal,
@@ -599,7 +945,7 @@
       optionalTotal,
     } = checklist;
 
-    if (!items.length) {
+    if (!hasRequirements) {
       return null;
     }
 
@@ -664,10 +1010,15 @@
   };
 
   const ChecklistPrePublishPanel = ({ checklist }) => {
-    const { items, readinessBoolean, requiredDone, requiredTotal, missingRequired } =
-      checklist;
+    const {
+      hasRequirements,
+      readinessBoolean,
+      requiredDone,
+      requiredTotal,
+      missingRequired,
+    } = checklist;
 
-    if (!items.length || readinessBoolean) {
+    if (!hasRequirements || readinessBoolean) {
       return null;
     }
 
@@ -703,8 +1054,8 @@
   };
 
   const EditorialChecklistPlugin = () => {
-    const { meta, post } = useEditorState();
-    const checklist = useChecklist(meta);
+    const { meta, post, automaticState } = useEditorState();
+    const checklist = useChecklist(meta, automaticState);
 
     return el(
       Fragment,

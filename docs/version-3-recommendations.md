@@ -2,13 +2,13 @@
 
 This document translates [Competitive Research Report v3](deep-research-report-v3.md) into a focused feature plan for the current free plugin. It supersedes the previous recommendations document.
 
-The current `1.0.0` plugin is already complete within its lightweight Gutenberg checklist and readiness scope. The v3 research recommends strengthening that same product loop rather than adding calendars, project management, social scheduling, or a broad approval suite to Free.
+The `1.0.0` baseline was already complete within its lightweight Gutenberg checklist and readiness scope. The v3 research recommends strengthening that same product loop rather than adding calendars, project management, social scheduling, or a broad approval suite to Free.
 
 ## Decision summary
 
 | Decision | Features |
 |---|---|
-| **Add to Free** | Automated Requirements Lite with five built-in checks. |
+| **Implemented in Free 1.1.0** | Automated Requirements Lite with five built-in checks. |
 | **Add to Free** | A stable PHP and JavaScript rule-registration API for code-defined checks. |
 | **Add to Free after the rule architecture is validated** | A basic opt-in **Advisory / Block** publication policy per post type. |
 | **Keep in Pro** | Advanced rules, no-code rule composition, integrations, granular policies, bypass governance, approvals, notifications, audit history, portability, Classic Editor support, and premium administration. |
@@ -21,7 +21,7 @@ The intended value ladder is:
 - **Pro applies organization-specific policy, accountability, integrations, and portability.**
 - **Premium packs add agency scale, publishing operations, and compliance governance.**
 
-## 1. Automated Requirements Lite
+## 1. Automated Requirements Lite (implemented in 1.1.0)
 
 Add automatic checks alongside the existing manual required and optional checklist items.
 
