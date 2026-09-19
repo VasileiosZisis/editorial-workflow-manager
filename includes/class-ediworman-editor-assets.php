@@ -29,6 +29,8 @@ class EDIWORMAN_Editor_Assets {
 	 * @return void
 	 */
 	public function enqueue() {
+		global $post;
+
 		if ( ! function_exists( 'get_current_screen' ) ) {
 			return;
 		}
@@ -49,17 +51,55 @@ class EDIWORMAN_Editor_Assets {
 		}
 
 		wp_enqueue_script(
+			'ediworman-rule-api',
+			EDIWORMAN_URL . 'assets/js/rule-api.js',
+			array(),
+			EDIWORMAN_VERSION,
+			true
+		);
+
+		$template_id   = null;
+		$items         = array();
+		$template_mode = 'legacy';
+		$automatic_data = array(
+			'rules'             => array(),
+			'taxonomyRestBases' => array(),
+			'editorScripts'     => array(),
+		);
+		$template_data = EDIWORMAN_Readiness::get_template_data_for_post_type( $post_type );
+
+		if ( null !== $template_data ) {
+			$template_id    = $template_data['template_id'];
+			$template_mode  = $template_data['template_mode'];
+			$items          = $template_data['items'];
+			$automatic_data = EDIWORMAN_Automatic_Requirements::get_editor_data( $template_id, $post_type );
+		}
+
+		$editor_script_dependencies = array();
+		foreach ( $automatic_data['editorScripts'] as $editor_script ) {
+			if ( wp_script_is( $editor_script, 'registered' ) ) {
+				wp_enqueue_script( $editor_script );
+				$editor_script_dependencies[] = $editor_script;
+			}
+		}
+
+		wp_enqueue_script(
 			'ediworman-sidebar',
 			EDIWORMAN_URL . 'assets/js/sidebar.js',
-			array(
-				'wp-plugins',
-				'wp-edit-post',
-				'wp-element',
-				'wp-i18n',
-				'wp-components',
-				'wp-data',
-				'wp-core-data',
-				'wp-blocks',
+			array_merge(
+				array(
+					'ediworman-rule-api',
+					'wp-plugins',
+					'wp-edit-post',
+					'wp-element',
+					'wp-i18n',
+					'wp-components',
+					'wp-data',
+					'wp-core-data',
+					'wp-blocks',
+					'wp-api-fetch',
+				),
+				$editor_script_dependencies
 			),
 			EDIWORMAN_VERSION,
 			true
@@ -76,21 +116,8 @@ class EDIWORMAN_Editor_Assets {
 			EDIWORMAN_VERSION
 		);
 
-		$template_id   = null;
-		$items         = array();
-		$template_mode = 'legacy';
-		$automatic_data = array(
-			'rules'             => array(),
-			'taxonomyRestBases' => array(),
-		);
-		$template_data = EDIWORMAN_Readiness::get_template_data_for_post_type( $post_type );
-
-		if ( null !== $template_data ) {
-			$template_id   = $template_data['template_id'];
-			$template_mode = $template_data['template_mode'];
-			$items         = $template_data['items'];
-			$automatic_data = EDIWORMAN_Automatic_Requirements::get_editor_data( $template_id, $post_type );
-		}
+		$post_id       = $post instanceof WP_Post ? absint( $post->ID ) : 0;
+		$saved_results = $post_id > 0 ? EDIWORMAN_Automatic_Requirements::evaluate_post( $post_id ) : array();
 
 		wp_localize_script(
 			'ediworman-sidebar',
@@ -102,6 +129,13 @@ class EDIWORMAN_Editor_Assets {
 				'items'        => $items,
 				'automaticRequirements' => $automatic_data['rules'],
 				'taxonomyRestBases'     => $automatic_data['taxonomyRestBases'],
+				'savedAutomaticResults' => $saved_results,
+				'ruleResultSchemaVersion' => EDIWORMAN_Rule_Registry::RESULT_SCHEMA_VERSION,
+				'ruleResultsRestPath'   => $post_id > 0 ? '/editorial-workflow-manager/v1/posts/' . $post_id . '/rules' : '',
+				'ruleMessages'          => array(
+					'saveToRefresh'  => __( 'Saved result. Save the post to refresh this requirement.', 'editorial-workflow-manager' ),
+					'evaluationError' => __( 'This requirement could not be evaluated. Contact a site administrator.', 'editorial-workflow-manager' ),
+				),
 				'feedback'     => EDIWORMAN_Feedback::get_editor_data(),
 			)
 		);

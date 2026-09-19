@@ -366,7 +366,7 @@ class EDIWORMAN_Templates_CPT {
 
 			<?php foreach ( $definitions as $rule_key => $definition ) : ?>
 				<?php
-				$rule_id        = 'ediworman-automatic-requirement-' . $rule_key;
+				$rule_id        = 'ediworman-automatic-requirement-' . sanitize_html_class( str_replace( '/', '-', $rule_key ) );
 				$description_id = $rule_id . '-description';
 				$enabled        = ! empty( $config[ $rule_key ]['enabled'] );
 				?>
@@ -403,6 +403,17 @@ class EDIWORMAN_Templates_CPT {
 					<p class="description" id="<?php echo esc_attr( $description_id ); ?>">
 						<?php echo esc_html( $definition['description'] ); ?>
 					</p>
+					<?php if ( empty( $definition['builtin'] ) ) : ?>
+						<p class="description">
+							<?php
+							printf(
+								/* translators: %s: registered automatic-requirement rule ID. */
+								esc_html__( 'Provided by an extension (%s).', 'editorial-workflow-manager' ),
+								'<code>' . esc_html( $rule_key ) . '</code>'
+							);
+							?>
+						</p>
+					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
 		</section>
@@ -577,6 +588,16 @@ class EDIWORMAN_Templates_CPT {
 					return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : $value;
 				}
 			);
+		}
+
+		$stored_automatic_requirements = get_post_meta( $post_id, EDIWORMAN_Automatic_Requirements::META_KEY, true );
+		$stored_automatic_requirements = is_array( $stored_automatic_requirements ) ? $stored_automatic_requirements : array();
+		foreach ( $stored_automatic_requirements as $stored_rule_key => $stored_rule_config ) {
+			if ( isset( $raw_automatic_requirements[ $stored_rule_key ] ) || EDIWORMAN_Rule_Registry::get_rule( $stored_rule_key ) ) {
+				continue;
+			}
+
+			$raw_automatic_requirements[ $stored_rule_key ] = $stored_rule_config;
 		}
 
 		$automatic_requirements = EDIWORMAN_Automatic_Requirements::sanitize_config( $raw_automatic_requirements );

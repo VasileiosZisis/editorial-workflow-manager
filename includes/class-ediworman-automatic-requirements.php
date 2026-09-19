@@ -24,11 +24,44 @@ class EDIWORMAN_Automatic_Requirements {
 	const IMAGE_ALT_TEXT         = 'image_alt_text';
 
 	/**
+	 * Register the five built-in rules with the shared registry.
+	 *
+	 * @return void
+	 */
+	public static function register_builtin_rules() {
+		$definitions = self::get_builtin_rule_definitions();
+		$dependencies = array(
+			self::FEATURED_IMAGE     => array( 'post_fields' => array( 'featured_media' ) ),
+			self::EXCERPT            => array( 'post_fields' => array( 'post_excerpt' ) ),
+			self::MINIMUM_WORD_COUNT => array( 'post_fields' => array( 'post_content' ) ),
+			self::TAXONOMY_PRESENCE  => array( 'taxonomies' => array( 'category', 'post_tag' ) ),
+			self::IMAGE_ALT_TEXT     => array(
+				'post_fields'    => array( 'post_content', 'featured_media' ),
+				'attachment_alt' => true,
+			),
+		);
+
+		foreach ( self::get_builtin_rule_keys() as $rule_key ) {
+			EDIWORMAN_Rule_Registry::register_builtin_rule(
+				$rule_key,
+				array(
+					'api_version'       => EDIWORMAN_Rule_Registry::API_VERSION,
+					'rule_version'      => '1.0.0',
+					'label'             => $definitions[ $rule_key ]['label'],
+					'description'       => $definitions[ $rule_key ]['description'],
+					'dependencies'      => $dependencies[ $rule_key ],
+					'evaluate_callback' => array( __CLASS__, 'evaluate_builtin_rule' ),
+				)
+			);
+		}
+	}
+
+	/**
 	 * Return every supported automatic requirement key.
 	 *
 	 * @return array<int, string>
 	 */
-	public static function get_rule_keys() {
+	public static function get_builtin_rule_keys() {
 		return array(
 			self::FEATURED_IMAGE,
 			self::EXCERPT,
@@ -36,6 +69,15 @@ class EDIWORMAN_Automatic_Requirements {
 			self::TAXONOMY_PRESENCE,
 			self::IMAGE_ALT_TEXT,
 		);
+	}
+
+	/**
+	 * Return every currently registered automatic requirement key.
+	 *
+	 * @return array<int,string>
+	 */
+	public static function get_rule_keys() {
+		return array_keys( EDIWORMAN_Rule_Registry::get_rules() );
 	}
 
 	/**
@@ -84,6 +126,19 @@ class EDIWORMAN_Automatic_Requirements {
 			}
 		}
 
+		// Keep unavailable custom registrations so their enablement returns when
+		// the provider plugin is reactivated. Unknown built-in-looking keys are
+		// deliberately discarded.
+		foreach ( $raw_config as $rule_key => $raw_rule ) {
+			if ( isset( $config[ $rule_key ] ) || ! is_string( $rule_key ) || false === strpos( $rule_key, '/' ) || ! is_array( $raw_rule ) ) {
+				continue;
+			}
+
+			$config[ $rule_key ] = array(
+				'enabled' => self::normalize_enabled( $raw_rule['enabled'] ?? false ),
+			);
+		}
+
 		return $config;
 	}
 
@@ -92,7 +147,7 @@ class EDIWORMAN_Automatic_Requirements {
 	 *
 	 * @return array<string, array{label:string,description:string}>
 	 */
-	public static function get_rule_definitions() {
+	private static function get_builtin_rule_definitions() {
 		return array(
 			self::FEATURED_IMAGE     => array(
 				'label'       => __( 'Featured image present', 'editorial-workflow-manager' ),
@@ -118,16 +173,35 @@ class EDIWORMAN_Automatic_Requirements {
 	}
 
 	/**
+	 * Return registered labels and descriptions for template administration.
+	 *
+	 * @return array<string,array{label:string,description:string,builtin:bool}>
+	 */
+	public static function get_rule_definitions() {
+		$definitions = array();
+		foreach ( EDIWORMAN_Rule_Registry::get_rules() as $rule_id => $rule ) {
+			$definitions[ $rule_id ] = array(
+				'label'       => $rule['label'],
+				'description' => $rule['description'],
+				'builtin'     => $rule['builtin'],
+			);
+		}
+
+		return $definitions;
+	}
+
+	/**
 	 * Return enabled, applicable rules for live block-editor evaluation.
 	 *
 	 * @param int    $template_id Checklist template ID.
 	 * @param string $post_type   Content post type.
-	 * @return array{rules:array<int,array{key:string,label:string,minimum?:int}>,taxonomyRestBases:array<int,string>}
+	 * @return array{rules:array<int,array>,taxonomyRestBases:array<int,string>,editorScripts:array<int,string>}
 	 */
 	public static function get_editor_data( $template_id, $post_type ) {
 		$post_type  = sanitize_key( $post_type );
 		$config     = self::get_template_config( $template_id );
 		$rules      = array();
+		$editor_scripts = array();
 		$taxonomies = self::get_supported_taxonomies( $post_type );
 
 		foreach ( self::get_rule_keys() as $rule_key ) {
@@ -135,9 +209,18 @@ class EDIWORMAN_Automatic_Requirements {
 				continue;
 			}
 
+			$definition = EDIWORMAN_Rule_Registry::get_rule( $rule_key );
+			if ( ! $definition ) {
+				continue;
+			}
+
 			$rule = array(
+				'id'    => $rule_key,
 				'key'   => $rule_key,
 				'label' => self::get_readiness_label( $rule_key, $config[ $rule_key ] ),
+				'builtin' => ! empty( $definition['builtin'] ),
+				'hasClientEvaluator' => ! empty( $definition['builtin'] ) || '' !== $definition['editor_script'],
+				'config' => $config[ $rule_key ],
 			);
 
 			if ( self::MINIMUM_WORD_COUNT === $rule_key ) {
@@ -145,6 +228,9 @@ class EDIWORMAN_Automatic_Requirements {
 			}
 
 			$rules[] = $rule;
+			if ( ! empty( $definition['editor_script'] ) ) {
+				$editor_scripts[] = $definition['editor_script'];
+			}
 		}
 
 		$rest_bases = array();
@@ -160,6 +246,7 @@ class EDIWORMAN_Automatic_Requirements {
 		return array(
 			'rules'             => $rules,
 			'taxonomyRestBases' => array_values( array_unique( array_map( 'sanitize_key', $rest_bases ) ) ),
+			'editorScripts'     => array_values( array_unique( $editor_scripts ) ),
 		);
 	}
 
@@ -177,7 +264,13 @@ class EDIWORMAN_Automatic_Requirements {
 			return array();
 		}
 
-		$config     = self::sanitize_config( $config );
+		if ( empty( $config ) ) {
+			$template_id = EDIWORMAN_Settings::get_template_for_post_type( $post->post_type );
+			$config      = $template_id ? self::get_template_config( $template_id ) : array();
+		} else {
+			$config = self::sanitize_config( $config );
+		}
+
 		$post_type  = sanitize_key( $post->post_type );
 		$taxonomies = self::get_supported_taxonomies( $post_type );
 		$results    = array();
@@ -187,76 +280,87 @@ class EDIWORMAN_Automatic_Requirements {
 				continue;
 			}
 
-			$passed  = false;
-			$message = '';
-
-			switch ( $rule_key ) {
-				case self::FEATURED_IMAGE:
-					$thumbnail_id = get_post_thumbnail_id( $post_id );
-					$thumbnail    = $thumbnail_id > 0 ? get_post( $thumbnail_id ) : null;
-					$passed       = $thumbnail && 'attachment' === $thumbnail->post_type;
-					$message      = $passed
-						? __( 'Featured image detected.', 'editorial-workflow-manager' )
-						: __( 'Add a featured image.', 'editorial-workflow-manager' );
-					break;
-
-				case self::EXCERPT:
-					$passed  = '' !== trim( wp_strip_all_tags( (string) $post->post_excerpt ) );
-					$message = $passed
-						? __( 'Excerpt detected.', 'editorial-workflow-manager' )
-						: __( 'Add a manual excerpt.', 'editorial-workflow-manager' );
-					break;
-
-				case self::MINIMUM_WORD_COUNT:
-					$minimum    = (int) $config[ $rule_key ]['minimum'];
-					$word_count = self::count_words( $post->post_content );
-					$passed     = $word_count >= $minimum;
-					$message    = sprintf(
-						/* translators: 1: current word count, 2: required minimum word count. */
-						__( '%1$d of %2$d required words.', 'editorial-workflow-manager' ),
-						$word_count,
-						$minimum
-					);
-					break;
-
-				case self::TAXONOMY_PRESENCE:
-					$term_ids = wp_get_object_terms(
-						$post_id,
-						$taxonomies,
-						array( 'fields' => 'ids' )
-					);
-					$passed   = ! is_wp_error( $term_ids ) && ! empty( $term_ids );
-					$message  = $passed
-						? __( 'Category or tag detected.', 'editorial-workflow-manager' )
-						: __( 'Assign at least one category or tag.', 'editorial-workflow-manager' );
-					break;
-
-				case self::IMAGE_ALT_TEXT:
-					$image_summary = self::get_image_alt_summary( $post );
-					$passed        = 0 === $image_summary['missing'];
-					$message       = $passed
-						? sprintf(
-							/* translators: %d: number of images checked. */
-							__( '%d image(s) checked.', 'editorial-workflow-manager' ),
-							$image_summary['total']
-						)
-						: sprintf(
-							/* translators: %s: comma-separated image locations missing alternative text. */
-							__( 'Add alternative text to: %s.', 'editorial-workflow-manager' ),
-							implode( ', ', $image_summary['missing_labels'] )
-						);
-					break;
+			$result = EDIWORMAN_Rule_Registry::evaluate( $rule_key, $post_id, $config[ $rule_key ] );
+			if ( EDIWORMAN_Rule_Registry::STATUS_NOT_APPLICABLE === $result['status'] ) {
+				continue;
 			}
 
-			$results[] = array(
-				'key'     => $rule_key,
-				'label'   => self::get_readiness_label( $rule_key, $config[ $rule_key ] ),
-				'passed'  => $passed,
-				'message' => $message,
-			);
+			$result['label'] = self::get_readiness_label( $rule_key, $config[ $rule_key ] );
+			$results[]       = $result;
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Evaluate one built-in requirement through the public result schema.
+	 *
+	 * @param int   $post_id Content post ID.
+	 * @param array $config  Rule configuration.
+	 * @param array $rule    Registered rule definition.
+	 * @return array{status:string,message:string}
+	 */
+	public static function evaluate_builtin_rule( $post_id, $config, $rule ) {
+		$post       = get_post( $post_id );
+		$rule_key   = $rule['id'];
+		$post_type  = $post ? sanitize_key( $post->post_type ) : '';
+		$taxonomies = self::get_supported_taxonomies( $post_type );
+
+		if ( ! $post || ! self::is_rule_applicable( $rule_key, $post_type, $taxonomies ) ) {
+			return array( 'status' => EDIWORMAN_Rule_Registry::STATUS_NOT_APPLICABLE, 'message' => '' );
+		}
+
+		$passed  = false;
+		$message = '';
+
+		switch ( $rule_key ) {
+			case self::FEATURED_IMAGE:
+				$thumbnail_id = get_post_thumbnail_id( $post_id );
+				$thumbnail    = $thumbnail_id > 0 ? get_post( $thumbnail_id ) : null;
+				$passed       = $thumbnail && 'attachment' === $thumbnail->post_type;
+				$message      = $passed ? __( 'Featured image detected.', 'editorial-workflow-manager' ) : __( 'Add a featured image.', 'editorial-workflow-manager' );
+				break;
+			case self::EXCERPT:
+				$passed  = '' !== trim( wp_strip_all_tags( (string) $post->post_excerpt ) );
+				$message = $passed ? __( 'Excerpt detected.', 'editorial-workflow-manager' ) : __( 'Add a manual excerpt.', 'editorial-workflow-manager' );
+				break;
+			case self::MINIMUM_WORD_COUNT:
+				$minimum    = (int) ( $config['minimum'] ?? self::DEFAULT_MINIMUM_WORDS );
+				$word_count = self::count_words( $post->post_content );
+				$passed     = $word_count >= $minimum;
+				$message    = sprintf(
+					/* translators: 1: current word count, 2: required minimum word count. */
+					__( '%1$d of %2$d required words.', 'editorial-workflow-manager' ),
+					$word_count,
+					$minimum
+				);
+				break;
+			case self::TAXONOMY_PRESENCE:
+				$term_ids = wp_get_object_terms( $post_id, $taxonomies, array( 'fields' => 'ids' ) );
+				$passed   = ! is_wp_error( $term_ids ) && ! empty( $term_ids );
+				$message  = $passed ? __( 'Category or tag detected.', 'editorial-workflow-manager' ) : __( 'Assign at least one category or tag.', 'editorial-workflow-manager' );
+				break;
+			case self::IMAGE_ALT_TEXT:
+				$image_summary = self::get_image_alt_summary( $post );
+				$passed        = 0 === $image_summary['missing'];
+				$message       = $passed
+					? sprintf(
+						/* translators: %d: number of images checked. */
+						__( '%d image(s) checked.', 'editorial-workflow-manager' ),
+						$image_summary['total']
+					)
+					: sprintf(
+						/* translators: %s: comma-separated image locations missing alternative text. */
+						__( 'Add alternative text to: %s.', 'editorial-workflow-manager' ),
+						implode( ', ', $image_summary['missing_labels'] )
+					);
+				break;
+		}
+
+		return array(
+			'status'  => $passed ? EDIWORMAN_Rule_Registry::STATUS_PASS : EDIWORMAN_Rule_Registry::STATUS_FAIL,
+			'message' => $message,
+		);
 	}
 
 	/**
@@ -282,7 +386,12 @@ class EDIWORMAN_Automatic_Requirements {
 			self::IMAGE_ALT_TEXT    => __( 'All images have alternative text', 'editorial-workflow-manager' ),
 		);
 
-		return isset( $labels[ $rule_key ] ) ? $labels[ $rule_key ] : '';
+		if ( isset( $labels[ $rule_key ] ) ) {
+			return $labels[ $rule_key ];
+		}
+
+		$rule = EDIWORMAN_Rule_Registry::get_rule( $rule_key );
+		return $rule ? $rule['label'] : '';
 	}
 
 	/**
@@ -313,6 +422,15 @@ class EDIWORMAN_Automatic_Requirements {
 	 * @return bool
 	 */
 	private static function is_rule_applicable( $rule_key, $post_type, $taxonomies ) {
+		$rule = EDIWORMAN_Rule_Registry::get_rule( $rule_key );
+		if ( ! $rule ) {
+			return false;
+		}
+
+		if ( ! empty( $rule['post_types'] ) && ! in_array( $post_type, $rule['post_types'], true ) ) {
+			return false;
+		}
+
 		switch ( $rule_key ) {
 			case self::FEATURED_IMAGE:
 				return post_type_supports( $post_type, 'thumbnail' ) && current_theme_supports( 'post-thumbnails' );
@@ -325,7 +443,7 @@ class EDIWORMAN_Automatic_Requirements {
 				return post_type_supports( $post_type, 'editor' );
 		}
 
-		return false;
+		return true;
 	}
 
 	/**

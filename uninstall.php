@@ -24,6 +24,7 @@ function ediworman_uninstall_cleanup_site() {
 	delete_option( 'ediworman_settings' );
 	delete_option( 'ediworman_quickstart_pending_version' );
 	delete_option( 'ediworman_readiness_cache_version' );
+	delete_option( 'ediworman_rule_registry_fingerprint' );
 
 	// Remove post meta stored on edited content.
 	delete_post_meta_by_key( '_ediworman_checked_items' );

@@ -9,7 +9,7 @@ The `1.0.0` baseline was already complete within its lightweight Gutenberg check
 | Decision | Features |
 |---|---|
 | **Implemented in Free 1.1.0** | Automated Requirements Lite with five built-in checks. |
-| **Add to Free** | A stable PHP and JavaScript rule-registration API for code-defined checks. |
+| **Implemented in Free 1.2.0** | A stable PHP and JavaScript rule-registration API for code-defined checks. |
 | **Add to Free after the rule architecture is validated** | A basic opt-in **Advisory / Block** publication policy per post type. |
 | **Keep in Pro** | Advanced rules, no-code rule composition, integrations, granular policies, bypass governance, approvals, notifications, audit history, portability, Classic Editor support, and premium administration. |
 | **Keep in premium packs** | Agency, Publisher, and Compliance capabilities. |
@@ -77,7 +77,7 @@ Add automatic checks alongside the existing manual required and optional checkli
 - Dashboard counts reflect the combined manual and automatic readiness result.
 - Existing search, status, taxonomy, pagination, and third-party filters remain compatible.
 
-## 2. Public rule-registration API
+## 2. Public rule-registration API (implemented in 1.2.0)
 
 The rule engine should be extensible in Free so agencies and developers can implement site-specific validation without modifying the plugin.
 

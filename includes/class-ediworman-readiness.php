@@ -22,7 +22,7 @@ class EDIWORMAN_Readiness {
 	const READINESS_INCOMPLETE = 'incomplete';
 
 	const CACHE_SCHEMA_VERSION_OPTION = 'ediworman_readiness_cache_version';
-	const CACHE_SCHEMA_VERSION        = '3';
+	const CACHE_SCHEMA_VERSION        = '4';
 
 	/**
 	 * Register readiness-related hooks.
@@ -122,12 +122,15 @@ class EDIWORMAN_Readiness {
 	public static function handle_checklist_meta_change( $meta_id, $post_id, $meta_key, $meta_value ) {
 		unset( $meta_id, $meta_value );
 
-		if ( '_wp_attachment_image_alt' === $meta_key ) {
+		if ( '_wp_attachment_image_alt' === $meta_key && EDIWORMAN_Rule_Registry::depends_on_attachment_alt() ) {
 			self::clear_all_caches();
 			return;
 		}
 
-		if ( ! in_array( $meta_key, array( '_ediworman_checked_items', '_ediworman_checked_item_ids', '_thumbnail_id' ), true ) ) {
+		if (
+			! in_array( $meta_key, array( '_ediworman_checked_items', '_ediworman_checked_item_ids', '_thumbnail_id' ), true ) &&
+			! EDIWORMAN_Rule_Registry::depends_on_post_meta( $meta_key )
+		) {
 			return;
 		}
 
@@ -158,7 +161,7 @@ class EDIWORMAN_Readiness {
 	public static function handle_object_terms_change( $object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids ) {
 		unset( $terms, $tt_ids, $append, $old_tt_ids );
 
-		if ( ! in_array( $taxonomy, array( 'category', 'post_tag' ), true ) ) {
+		if ( ! EDIWORMAN_Rule_Registry::depends_on_taxonomy( $taxonomy ) ) {
 			return;
 		}
 
@@ -339,6 +342,28 @@ class EDIWORMAN_Readiness {
 		}
 
 		$post_types = self::get_post_types_mapped_to_template( $template_id );
+		self::invalidate_caches_for_post_types( $post_types );
+	}
+
+	/**
+	 * Invalidate caches for post types mapped to templates using a rule.
+	 *
+	 * @param string $rule_id Registered rule ID.
+	 * @return void
+	 */
+	public static function invalidate_caches_for_rule( $rule_id ) {
+		$rule_id    = is_string( $rule_id ) ? trim( $rule_id ) : '';
+		$settings   = get_option( EDIWORMAN_Settings::OPTION_NAME, array() );
+		$mappings   = self::get_mappings_from_settings_value( $settings );
+		$post_types = array();
+
+		foreach ( $mappings as $post_type => $template_id ) {
+			$config = EDIWORMAN_Automatic_Requirements::get_template_config( $template_id );
+			if ( ! empty( $config[ $rule_id ]['enabled'] ) ) {
+				$post_types[] = $post_type;
+			}
+		}
+
 		self::invalidate_caches_for_post_types( $post_types );
 	}
 

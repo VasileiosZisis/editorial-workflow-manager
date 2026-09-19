@@ -7,10 +7,11 @@
     PluginPrePublishPanel,
   } = wp.editor;
   const { PanelBody, CheckboxControl, Notice, Button } = wp.components;
-  const { Fragment, createElement: el, useMemo, useState } = wp.element;
+  const { Fragment, createElement: el, useEffect, useMemo, useState } = wp.element;
   const { useSelect, useDispatch } = wp.data;
   const { __, sprintf } = wp.i18n;
   const { parse: parseBlocks } = wp.blocks;
+  const apiFetch = wp.apiFetch;
 
   const UUID_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -19,7 +20,7 @@
     const rawData = window.EDIWORMAN_CHECKLIST_DATA || {};
     const templateMode = rawData.templateMode === 'v2' ? 'v2' : 'legacy';
     const rawItems = Array.isArray(rawData.items) ? rawData.items : [];
-    const supportedAutomaticRequirements = new Set([
+    const builtInAutomaticRequirements = new Set([
       'featured_image',
       'excerpt',
       'minimum_word_count',
@@ -67,7 +68,8 @@
               !rule ||
               typeof rule !== 'object' ||
               typeof rule.key !== 'string' ||
-              !supportedAutomaticRequirements.has(rule.key) ||
+              (!builtInAutomaticRequirements.has(rule.key) &&
+                !/^[a-z][a-z0-9_-]{1,31}\/[a-z][a-z0-9_-]{1,63}$/.test(rule.key)) ||
               typeof rule.label !== 'string' ||
               !rule.label.trim()
             ) {
@@ -75,8 +77,15 @@
             }
 
             const normalizedRule = {
+              id: rule.key,
               key: rule.key,
               label: rule.label.trim(),
+              builtin: rule.builtin === true,
+              hasClientEvaluator: rule.hasClientEvaluator === true,
+              config:
+                rule.config && typeof rule.config === 'object'
+                  ? rule.config
+                  : { enabled: true },
             };
 
             if (rule.key === 'minimum_word_count') {
@@ -97,11 +106,37 @@
         )
       : [];
 
+	const savedAutomaticResults = Array.isArray(rawData.savedAutomaticResults)
+	  ? rawData.savedAutomaticResults
+	      .filter(
+	        (result) =>
+	          result &&
+	          typeof result === 'object' &&
+	          typeof result.key === 'string' &&
+	          ['pass', 'fail'].includes(result.status),
+	      )
+	      .map((result) => ({
+	        key: result.key,
+	        status: result.status,
+	        passed: result.status === 'pass',
+	        message: typeof result.message === 'string' ? result.message : '',
+	      }))
+	  : [];
+
     return {
       templateMode,
       items,
       automaticRequirements,
       taxonomyRestBases,
+	  savedAutomaticResults,
+	  ruleResultsRestPath:
+	    typeof rawData.ruleResultsRestPath === 'string'
+	      ? rawData.ruleResultsRestPath
+	      : '',
+	  ruleMessages:
+	    rawData.ruleMessages && typeof rawData.ruleMessages === 'object'
+	      ? rawData.ruleMessages
+	      : {},
     };
   };
 
@@ -207,8 +242,11 @@
     return matches ? matches.length : 0;
   };
 
-  const evaluateAutomaticRequirements = (state) => {
+  const evaluateAutomaticRequirements = (state, savedResults) => {
     const { automaticRequirements } = checklistData;
+	const savedResultsByKey = new Map(
+	  savedResults.map((result) => [result.key, result]),
+	);
     const imageSummary = state.images.reduce(
       (summary, image) => {
         const mediaAlt = image.id > 0 ? state.mediaAlts[image.id] || '' : '';
@@ -227,6 +265,8 @@
     return automaticRequirements.map((rule) => {
       let passed = false;
       let message = '';
+	  let status = 'fail';
+	  let serverOnly = false;
 
       switch (rule.key) {
         case 'featured_image':
@@ -274,10 +314,48 @@
                 imageSummary.missingLabels.join(', '),
               );
           break;
+		default: {
+		  const clientResult =
+		    rule.hasClientEvaluator && window.EDIWORMAN_RULES
+		      ? window.EDIWORMAN_RULES.evaluate(rule.key, {
+		          rule,
+		          config: rule.config,
+		          post: state.post,
+		          meta: state.meta,
+		          content: state.content,
+		          excerpt: state.excerpt,
+		          featuredMediaId: state.featuredMediaId,
+		          images: state.images,
+		          mediaAlts: state.mediaAlts,
+		          taxonomyTerms: state.taxonomyTerms,
+		          select: state.select,
+		        })
+		      : null;
+
+		  if (clientResult) {
+		    status = clientResult.status;
+		    passed = status === 'pass';
+		    message = clientResult.message;
+		  } else {
+		    const savedResult = savedResultsByKey.get(rule.key);
+		    serverOnly = true;
+		    status = savedResult ? savedResult.status : 'fail';
+		    passed = status === 'pass';
+		    message = savedResult
+		      ? savedResult.message
+		      : checklistData.ruleMessages.evaluationError ||
+		        __('This requirement could not be evaluated. Contact a site administrator.', 'editorial-workflow-manager');
+		  }
+		  break;
+		}
       }
 
-      return { ...rule, passed, message };
-    });
+	  if (rule.builtin) {
+	    status = passed ? 'pass' : 'fail';
+	  }
+
+	  return { ...rule, status, passed, message, serverOnly };
+	}).filter((result) => result.status !== 'not_applicable');
   };
 
   const getChecklistSummary = ({
@@ -346,6 +424,9 @@
       const editor = select('core/editor');
       const hasAutomaticRequirements = automaticRuleKeys.size > 0;
       const needsContent =
+		checklistData.automaticRequirements.some(
+		  (rule) => !rule.builtin && rule.hasClientEvaluator,
+		) ||
         automaticRuleKeys.has('minimum_word_count') ||
         automaticRuleKeys.has('image_alt_text');
       const rawContent = needsContent
@@ -359,7 +440,10 @@
             : '';
       const featuredMediaId = parseInt(
         hasAutomaticRequirements &&
-          (automaticRuleKeys.has('featured_image') ||
+		  (checklistData.automaticRequirements.some(
+		    (rule) => !rule.builtin && rule.hasClientEvaluator,
+		  ) ||
+		    automaticRuleKeys.has('featured_image') ||
             automaticRuleKeys.has('image_alt_text'))
           ? editor.getEditedPostAttribute('featured_media')
           : 0,
@@ -399,7 +483,7 @@
         });
       }
 
-      const rawExcerpt = automaticRuleKeys.has('excerpt')
+	  const rawExcerpt = hasAutomaticRequirements
         ? editor.getEditedPostAttribute('excerpt')
         : '';
       const excerpt =
@@ -412,7 +496,14 @@
       return {
         meta: editor.getEditedPostAttribute('meta') || {},
         post: editor.getCurrentPost(),
+		saveSucceeded:
+		  !editor.isSavingPost() &&
+		  !editor.isAutosavingPost() &&
+		  editor.didPostSaveRequestSucceed(),
         automaticState: {
+		  select,
+		  meta: editor.getEditedPostAttribute('meta') || {},
+		  post: editor.getCurrentPost(),
           content,
           excerpt,
           featuredMediaId:
@@ -426,7 +517,7 @@
       };
     }, []);
 
-  const useChecklist = (meta, automaticState) => {
+  const useChecklist = (meta, automaticState, savedAutomaticResults) => {
     const { templateMode, items } = checklistData;
 
     const rawCheckedLabels = meta._ediworman_checked_items;
@@ -462,8 +553,8 @@
     const { editPost } = useDispatch('core/editor');
 
     const automaticResults = useMemo(
-      () => evaluateAutomaticRequirements(automaticState),
-      [automaticState],
+	  () => evaluateAutomaticRequirements(automaticState, savedAutomaticResults),
+	  [automaticState, savedAutomaticResults],
     );
 
     const summary = useMemo(
@@ -914,6 +1005,13 @@
                     : __('Needs attention.', 'editorial-workflow-manager'),
                 ),
                 el('p', null, result.message),
+				result.serverOnly &&
+				  el(
+				    'p',
+				    { className: 'description' },
+				    checklistData.ruleMessages.saveToRefresh ||
+				      __('Saved result. Save the post to refresh this requirement.', 'editorial-workflow-manager'),
+				  ),
               ),
             ),
           ),
@@ -1054,8 +1152,34 @@
   };
 
   const EditorialChecklistPlugin = () => {
-    const { meta, post, automaticState } = useEditorState();
-    const checklist = useChecklist(meta, automaticState);
+	const { meta, post, automaticState, saveSucceeded } = useEditorState();
+	const [savedAutomaticResults, setSavedAutomaticResults] = useState(
+	  checklistData.savedAutomaticResults,
+	);
+
+	useEffect(() => {
+	  if (
+	    !saveSucceeded ||
+	    !checklistData.ruleResultsRestPath ||
+	    typeof apiFetch !== 'function'
+	  ) {
+	    return;
+	  }
+
+	  apiFetch({ path: checklistData.ruleResultsRestPath })
+	    .then((response) => {
+	      if (response && Array.isArray(response.results)) {
+	        setSavedAutomaticResults(response.results);
+	      }
+	    })
+	    .catch(() => {});
+	}, [saveSucceeded]);
+
+	const checklist = useChecklist(
+	  meta,
+	  automaticState,
+	  savedAutomaticResults,
+	);
 
     return el(
       Fragment,

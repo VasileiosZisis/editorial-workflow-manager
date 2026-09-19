@@ -4,7 +4,7 @@ Tags: editorial, checklist, workflow, publishing, gutenberg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,8 @@ Templates can include five lightweight automatic requirements alongside manual c
 * **Image alternative-text coverage** for featured and content images.
 
 Automatic requirements update live in the block-editor sidebar and count toward the same readiness status, post-list details, filters, recalculation tools, and dashboard totals. Existing templates remain unchanged until an editor enables the checks. Rules that a mapped post type cannot support are ignored rather than treated as failed.
+
+Developers can also register site-specific automatic requirements through the documented PHP and JavaScript rule API. Custom rules receive the same template enablement, authoritative server evaluation, editor feedback, readiness aggregation, and cache invalidation behavior as the built-in checks.
 
 === See what is ready to publish ===
 
@@ -94,6 +96,7 @@ Use Editorial Workflow Manager for:
 * **Reusable checklist templates** — create a repeatable process once and use it across content.
 * **Required and Optional items** — distinguish publishing requirements from helpful guidance.
 * **Automatic requirements** — check featured images, excerpts, word count, category/tag presence, and image alternative text without manual confirmation.
+* **Developer rule API** — add code-defined automatic requirements from a separate plugin, with optional live Gutenberg evaluation.
 * **Helper text and reference links** — give authors context without leaving the checklist.
 * **Checklist template duplication** — clone and customize existing workflows.
 * **Per-post checklist progress** — each post or page maintains its own completion state.
@@ -154,6 +157,9 @@ Each enabled and applicable automatic requirement counts as a required item. It 
 
 The image alternative-text rule treats empty alternative text and unavailable attachment records as incomplete, and identifies the featured image or content-image position that needs attention. Leave that rule disabled on templates where intentionally decorative images with empty alternative text are common.
 
+= Can developers add custom automatic requirements? =
+Yes. Version 1.2.0 provides a documented PHP registration API and optional JavaScript evaluator contract. Registered rules can be enabled per checklist template and participate in the same readiness surfaces as built-in rules. See `docs/rule-registration-api.md` and the bundled standalone sample extension.
+
 = What happens to older templates/checklist data? =
 Legacy templates and label-based checked state remain supported.
 
@@ -172,6 +178,12 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 6. Editorial Readiness dashboard summary with Ready, Incomplete, and Not calculated counts.
 
 == Changelog ==
+
+= 1.2.0 =
+* Added a versioned PHP and JavaScript API for code-defined automatic requirements.
+* Added template enablement, authoritative server evaluation, optional live Gutenberg evaluation, and saved-result refresh for registered rules.
+* Added dependency-aware readiness invalidation and registry fingerprinting for extension activation, deactivation, and rule-version changes.
+* Added developer documentation and a standalone sample rule extension.
 
 = 1.1.0 =
 * Added five configurable automatic requirements for featured images, excerpts, minimum word count, category/tag presence, and image alternative text.
@@ -249,6 +261,9 @@ Yes. Use the **Duplicate** row action on the Checklist Templates screen to creat
 * First public release.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Developers can now register custom automatic requirements through a stable code-level API. Existing templates and built-in rules remain unchanged.
 
 = 1.1.0 =
 Adds opt-in automatic content requirements that use the existing readiness workflow. Existing templates and post readiness remain unchanged until rules are enabled.
