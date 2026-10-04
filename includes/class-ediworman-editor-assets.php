@@ -137,6 +137,11 @@ class EDIWORMAN_Editor_Assets {
 					'evaluationError' => __( 'This requirement could not be evaluated. Contact a site administrator.', 'editorial-workflow-manager' ),
 				),
 				'feedback'     => EDIWORMAN_Feedback::get_editor_data(),
+				'publicationPolicy' => array(
+					'mode'            => EDIWORMAN_Settings::get_publication_mode( $post_type ),
+					'missingTemplate' => null === $template_data,
+					'scheduledHeld'   => $post_id > 0 && ! empty( ( EDIWORMAN_Publication_Policy::get_blocked_details( $post_id ) ?? array() )['scheduled'] ),
+				),
 			)
 		);
 

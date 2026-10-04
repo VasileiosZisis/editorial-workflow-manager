@@ -20,6 +20,11 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * @return void
  */
 function ediworman_uninstall_cleanup_site() {
+	global $wpdb;
+
+	// User options are stored under the current site's database prefix.
+	delete_metadata( 'user', 0, $wpdb->get_blog_prefix() . 'ediworman_publication_announcement_dismissed', '', true );
+
 	// Delete settings.
 	delete_option( 'ediworman_settings' );
 	delete_option( 'ediworman_quickstart_pending_version' );
@@ -30,6 +35,7 @@ function ediworman_uninstall_cleanup_site() {
 	delete_post_meta_by_key( '_ediworman_checked_items' );
 	delete_post_meta_by_key( '_ediworman_checked_item_ids' );
 	delete_post_meta_by_key( '_ediworman_last_editor' );
+	delete_post_meta_by_key( '_ediworman_publication_blocked' );
 	delete_post_meta_by_key( '_ediworman_required_total_cache' );
 	delete_post_meta_by_key( '_ediworman_required_done_cache' );
 	delete_post_meta_by_key( '_ediworman_readiness_cache' );

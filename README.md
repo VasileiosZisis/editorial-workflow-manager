@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.2.0**
+Current release: **1.3.0**
 
 ## Free Version Features
 
@@ -17,6 +17,7 @@ Current release: **1.2.0**
 - Required and optional checklist items.
 - Five configurable automatic requirements: featured image, excerpt, minimum word count, category/tag presence, and image alternative-text coverage.
 - Public PHP and JavaScript registration API for code-defined automatic requirements.
+- Opt-in Advisory / Block publication policy per post type, with authoritative server checks and scheduled-publication revalidation.
 - Live automatic-result status in the block-editor sidebar.
 - Optional helper text and a reference URL per checklist item.
 - Per-post checklist state in Gutenberg.
@@ -27,7 +28,7 @@ Current release: **1.2.0**
   - Manager dashboard readiness summary.
   - Sidebar summary.
   - Status and visibility panel.
-  - Non-blocking pre-publish warning.
+  - Pre-publish guidance reflecting the post type's Advisory or Block policy.
 - Template mapping by post type from plugin settings.
 - Curated starter templates created on activation and upgrade.
 - Fresh-install Quickstart wizard for initial setup.
@@ -44,6 +45,7 @@ Current release: **1.2.0**
 3. Open the post editor from the wizard and follow the one-time sidebar tour.
 4. Adjust template mappings later in `Settings -> Editorial Workflow`.
 5. Complete required items until the readiness UI reports the checklist is ready.
+6. Administrators can optionally select Block in `Settings -> Editorial Workflow` to require readiness before first publication or scheduling.
 
 ## Documentation and Roadmap
 
@@ -54,6 +56,7 @@ Current release: **1.2.0**
 - [Current free-plugin recommendations (v3)](docs/version-3-recommendations.md)
 - [Planned Pro feature catalog](docs/pro-version-features.md)
 - [Automatic requirement rule API](docs/rule-registration-api.md)
+- [Publication policy behavior and integration limits](docs/publication-policy.md)
 
 The research and Pro documents are planning materials. Only the features listed under **Free Version Features** are included in the current plugin.
 
@@ -67,13 +70,17 @@ The research and Pro documents are planning materials. Only the features listed 
 - V2 checked state: `_ediworman_checked_item_ids` (`array<string>` UUIDs).
 - Readiness cache: `_ediworman_required_total_cache`, `_ediworman_required_done_cache`, `_ediworman_readiness_cache`.
 - Review prompt user state: up to five completed post IDs, a snooze timestamp, and a closed status.
+- Publication modes: `publication_modes` inside `ediworman_settings`, keyed by post type (`advisory` or `block`).
+- Latest blocked attempt: `_ediworman_publication_blocked` stores a reason, scheduled-hold flag, and timestamp; current explanations are recomputed.
+- Publication announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.3.0`, independently per administrator and site. Routine plugin updates do not reset it; uninstall removes it.
 
 Legacy templates remain supported. When a legacy template is edited/saved in the row editor, it is upgraded to v2 and the legacy mirror meta remains written for compatibility.
 
 ## Scope Notes
 
-- Free version does not hard-block publishing.
-- No front-end output; behavior is admin/editor only.
+- Advisory is the default. Opt-in Block gates first publication (including private posts) and scheduling; already-published/private posts remain editable.
+- Failed scheduled publication returns the post to Draft and requires an authorized user to publish or schedule again.
+- No front-end output. Server enforcement also applies to REST and supported programmatic saves.
 - By default, only Editors and Administrators can create, edit, or delete Checklist Templates.
 - Built for block editor (Gutenberg), not Classic Editor.
 - Readiness depends on required manual items and enabled, applicable automatic requirements; optional items do not block completion.

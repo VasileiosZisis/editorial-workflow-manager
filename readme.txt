@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Create reusable editorial checklist templates, automatically check common publis
 
 It is designed for content teams, editors, agencies, news sites, and multi-author WordPress websites that want a consistent publishing process without a complex workflow or project-management system.
 
-Editorial Workflow Manager does not add anything to your site's front end and does not hard-block publishing.
+Editorial Workflow Manager does not add anything to your site's front end. Publishing remains advisory by default, with optional Block mode for administrators who require checklist completion.
 
 It gives your team a focused WordPress pre-publish checklist with clear readiness feedback directly inside the editor.
 
@@ -67,7 +67,7 @@ Editorial Workflow Manager provides publishing-readiness feedback throughout the
 * Ready / Incomplete status based on required items.
 * Required-item progress while editing.
 * Post Status panel summary.
-* Non-blocking pre-publish warning.
+* Pre-publish guidance reflecting the Advisory or Block publication policy.
 * Readiness column in post lists for mapped post types.
 * Ready, Incomplete, and Not calculated post-list filters.
 * Expandable details showing missing required items.
@@ -75,9 +75,9 @@ Editorial Workflow Manager provides publishing-readiness feedback throughout the
 * Batched recalculation for all mapped posts.
 * Editorial Readiness dashboard summary for managers.
 
-The pre-publish warning is intentionally non-blocking.
+The default Advisory policy shows a non-blocking pre-publish warning.
 
-Authors remain in control of WordPress publishing while still receiving a clear warning when required editorial steps are incomplete.
+Administrators can choose Block per mapped post type to require completion before first publication or scheduling. The server checks saved requirements, and scheduled posts are checked again when due. Draft saving remains available; existing published and private posts remain editable.
 
 = A Gutenberg checklist where your team already works =
 
@@ -169,7 +169,7 @@ Developer documentation is included in `docs/rule-registration-api.md`, together
 * Different checklists for different post types.
 * Per-post checklist progress.
 * Ready / Incomplete publishing status.
-* Non-blocking pre-publish warnings.
+* Advisory warnings and opt-in publication blocking per post type.
 * Readiness status in WordPress post lists.
 * Missing-requirement details.
 * Readiness filters and recalculation tools.
@@ -190,7 +190,7 @@ It does not:
 * Add content to your site's front end.
 * Replace WordPress publishing with a separate workflow system.
 * Require a complex workflow builder.
-* Hard-block authors from publishing.
+* Add role-based bypasses or post-level publication exceptions.
 
 Use it when you want a practical Gutenberg pre-publish checklist and clear editorial readiness feedback without adding an enterprise workflow suite.
 
@@ -253,7 +253,7 @@ You can add the Featured Image automatic requirement to a checklist template.
 
 When enabled and applicable, the requirement remains incomplete until the post has a featured image.
 
-The plugin reports this through its readiness system and pre-publish warning, but it does not hard-block WordPress publishing.
+The plugin reports this through its readiness system and pre-publish guidance. Administrators can enable Block for the mapped post type to require completion before first publication or scheduling.
 
 = Can I check image alt text before publishing? =
 
@@ -267,9 +267,13 @@ If your workflow intentionally uses decorative images with empty alternative tex
 
 = Does Editorial Workflow Manager block publishing? =
 
-No.
+Yes, when an administrator explicitly enables Block for the post type.
 
-The pre-publish warning is intentionally non-blocking. Authors receive a clear warning when required items are incomplete but WordPress remains in control of the publishing action.
+Advisory is the default. Administrators can select Block per mapped post type to require required manual items and enabled, applicable automatic rules before first publication (including private publication) or scheduling. Failed attempts save submitted work without publishing. Existing published and private posts remain editable.
+
+Scheduled posts are rechecked when due. Failed checks return the post to Draft; an authorized user must resolve its requirements and publish or schedule it again. If a Block policy loses its template, an administrator must assign a replacement or select Advisory.
+
+Core REST, Quick Edit, bulk editing, and standard programmatic saves are guarded. The lower-level wp_publish_post() API receives a defensive rollback, but WordPress writes its status before that hook, so transient visibility and third-party publication side effects cannot be fully prevented. Raw database writes are outside supported enforcement. See docs/publication-policy.md for integration details.
 
 = Can I use different editorial checklists for different post types? =
 
@@ -343,6 +347,15 @@ A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
 
+= 1.3.0 =
+
+* Added opt-in Advisory / Block publication policies per mapped post type, defaulting to Advisory.
+* Added authoritative first-publication and scheduling checks across Gutenberg, REST, Quick Edit, bulk editing, and standard save APIs.
+* Added revalidation of scheduled posts before publication, with failed posts held as drafts.
+* Added actionable blocked-publication messages and recovery state while preserving submitted work.
+* Added a settings-only publication-policy announcement with persistent dismissal per administrator and site.
+* Kept published and private post updates editable and documented lower-level integration limits.
+
 = 1.2.0 =
 
 * Added a versioned PHP and JavaScript API for code-defined automatic requirements.
@@ -368,3 +381,9 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added expandable missing-required-item details to the Readiness column.
 * Added selected-post and batched all-post readiness recalculation tools.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
+
+== Upgrade Notice ==
+
+= 1.3.0 =
+
+Adds optional Block publication policies and scheduled-post revalidation. Existing sites remain Advisory until an administrator opts in. Failed attempts preserve submitted work without publishing; published and private posts remain editable.

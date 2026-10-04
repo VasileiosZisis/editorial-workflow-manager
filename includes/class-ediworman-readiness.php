@@ -519,7 +519,7 @@ class EDIWORMAN_Readiness {
 	 * @param int $post_id Content post ID.
 	 * @return array{required_total:int,required_done:int,readiness:string,missing_required_labels:array<int,string>}|null
 	 */
-	private static function evaluate_readiness_for_post( $post_id ) {
+	public static function evaluate_readiness_for_post( $post_id ) {
 		$post_id   = absint( $post_id );
 		$post_type = get_post_type( $post_id );
 		if ( ! self::is_cacheable_post_type( $post_type ) ) {

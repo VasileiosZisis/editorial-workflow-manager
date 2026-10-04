@@ -77,6 +77,12 @@ Rules without JavaScript use their last authoritative saved result and display a
 - Increase `rule_version` whenever evaluation semantics or dependencies change. The registry fingerprint invalidates aggregate readiness caches.
 - Call `ediworman_invalidate_post_readiness( $post_id )` after an undeclared per-post external dependency changes.
 - Call `ediworman_invalidate_rule_readiness( $rule_id )` after shared external state affecting all uses of a rule changes.
-- API version 1 has no custom template fields, asynchronous browser evaluators, remote execution, telemetry, or publication enforcement.
+- API version 1 has no custom template fields, asynchronous browser evaluators, remote execution, or telemetry. Version 1.3.0 adds an opt-in publication policy without changing the rule-registration contract.
+
+## Publication policy in 1.3.0
+
+When the mapped post type uses Block, every enabled, applicable registered rule participates in authoritative publication checks. PHP evaluates the complete saved content, metadata, and terms while the post is held in a non-public status. Callbacks must be read-only, deterministic for that saved state, and safe to execute more than once; do not depend on the post already having its requested public status. JavaScript results never authorize publication.
+
+An inactive provider remains excluded from evaluation, as in 1.2.0. An active evaluator that throws or returns malformed data fails the gate. Integrations should use `wp_insert_post()`/`wp_update_post()` and inspect the actual saved status; those functions may return a post ID even when publication is held. Core REST publication failures return `ediworman_publication_blocked` with HTTP 409 and the saved post ID/status. See [Publication policy](publication-policy.md) for scheduling and lower-level API limits.
 
 See [`examples/ediworman-reading-time-rule`](examples/ediworman-reading-time-rule/) for a complete standalone sample plugin.

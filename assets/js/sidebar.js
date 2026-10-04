@@ -126,6 +126,11 @@
     return {
       templateMode,
       items,
+      publicationPolicy: {
+        mode: rawData.publicationPolicy?.mode === 'block' ? 'block' : 'advisory',
+        missingTemplate: rawData.publicationPolicy?.missingTemplate === true,
+        scheduledHeld: rawData.publicationPolicy?.scheduledHeld === true,
+      },
       automaticRequirements,
       taxonomyRestBases,
 	  savedAutomaticResults,
@@ -496,6 +501,9 @@
       return {
         meta: editor.getEditedPostAttribute('meta') || {},
         post: editor.getCurrentPost(),
+		saveError: select('core').getLastEntitySaveError(
+		  'postType', editor.getCurrentPostType(), editor.getCurrentPostId(),
+		),
 		saveSucceeded:
 		  !editor.isSavingPost() &&
 		  !editor.isAutosavingPost() &&
@@ -793,6 +801,38 @@
     );
   };
 
+  const PublicationPolicyNotice = ({ checklist, post }) => {
+    const policy = checklistData.publicationPolicy;
+    if (policy.mode !== 'block') {
+      return null;
+    }
+    const isPublic = ['publish', 'private'].includes(post?.status);
+    const missing = checklist.items
+      .filter((item) => item.required && !checklist.isChecked(item))
+      .map((item) => item.label);
+    checklist.automaticResults.forEach((result) => {
+      if (!result.passed) {
+        missing.push(`${result.label}: ${result.message}`);
+      }
+    });
+    return el(
+      Notice,
+      { status: !isPublic && (missing.length || policy.missingTemplate) ? 'warning' : 'info', isDismissible: false },
+      el('p', { role: 'status', 'aria-live': 'polite' },
+        isPublic
+          ? __('Block policy applies to first publication. This published or private post remains editable.', 'editorial-workflow-manager')
+          : __('Block policy: complete required items before publishing or scheduling. Draft saving remains available. The server checks saved requirements before allowing publication; live results are provisional.', 'editorial-workflow-manager'),
+      ),
+      !isPublic && policy.missingTemplate && el('p', null,
+        __('Ask an administrator to assign a valid checklist template or select Advisory publication.', 'editorial-workflow-manager'),
+      ),
+      !isPublic && policy.scheduledHeld && (missing.length > 0 || policy.missingTemplate) && el('p', null,
+        __('Scheduled publication was held. Complete the requirements and publish or schedule this draft again.', 'editorial-workflow-manager'),
+      ),
+      !isPublic && missing.length > 0 && el('ul', null, missing.map((label, index) => el('li', { key: index }, label))),
+    );
+  };
+
   const SidebarContent = ({ checklist, meta, post }) => {
     const {
       items,
@@ -814,6 +854,7 @@
       return el(
         PanelBody,
         { title: __('Checklist', 'editorial-workflow-manager'), initialOpen: true },
+        el(PublicationPolicyNotice, { checklist, post }),
         el(
           Notice,
           { status: 'info', isDismissible: false },
@@ -863,6 +904,7 @@
     return el(
       PanelBody,
       { title: __('Checklist', 'editorial-workflow-manager'), initialOpen: true },
+      el(PublicationPolicyNotice, { checklist, post }),
       el(
         'div',
         { className: 'ediworman-checklist-status' },
@@ -1107,7 +1149,7 @@
     );
   };
 
-  const ChecklistPrePublishPanel = ({ checklist }) => {
+  const ChecklistPrePublishPanel = ({ checklist, post }) => {
     const {
       hasRequirements,
       readinessBoolean,
@@ -1116,7 +1158,8 @@
       missingRequired,
     } = checklist;
 
-    if (!hasRequirements || readinessBoolean) {
+    const block = checklistData.publicationPolicy.mode === 'block';
+    if ((!hasRequirements || readinessBoolean) && !block) {
       return null;
     }
 
@@ -1126,6 +1169,8 @@
         title: __('Editorial Checklist', 'editorial-workflow-manager'),
         initialOpen: true,
       },
+      block && el(PublicationPolicyNotice, { checklist, post }),
+      !block &&
       el(
         Notice,
         {
@@ -1152,10 +1197,23 @@
   };
 
   const EditorialChecklistPlugin = () => {
-	const { meta, post, automaticState, saveSucceeded } = useEditorState();
+	const { meta, post, automaticState, saveSucceeded, saveError } = useEditorState();
+	const { editPost } = useDispatch('core/editor');
 	const [savedAutomaticResults, setSavedAutomaticResults] = useState(
 	  checklistData.savedAutomaticResults,
 	);
+
+	// Core retains the attempted publication status after an unsuccessful save.
+	// Restore only the server-confirmed held status, without losing edited work.
+	useEffect(() => {
+	  if (saveError?.code !== 'ediworman_publication_blocked') {
+	    return;
+	  }
+	  const heldStatus = saveError.data?.post_status;
+	  if (heldStatus === 'draft' || heldStatus === 'pending') {
+	    editPost({ status: heldStatus });
+	  }
+	}, [saveError, editPost]);
 
 	useEffect(() => {
 	  if (
@@ -1200,7 +1258,7 @@
         el(SidebarContent, { checklist, meta, post }),
       ),
       el(ChecklistStatusInfo, { checklist }),
-      el(ChecklistPrePublishPanel, { checklist }),
+      el(ChecklistPrePublishPanel, { checklist, post }),
     );
   };
 

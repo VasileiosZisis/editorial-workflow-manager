@@ -20,6 +20,14 @@ class EDIWORMAN_Settings {
 	const OPTION_NAME = 'ediworman_settings';
 
 	/**
+	 * Fixed feature announcement identity; routine updates must not reset it.
+	 */
+	const PUBLICATION_ANNOUNCEMENT_VERSION = '1.3.0';
+	const PUBLICATION_ANNOUNCEMENT_USER_OPTION = 'ediworman_publication_announcement_dismissed';
+	const PUBLICATION_ANNOUNCEMENT_ACTION = 'ediworman_dismiss_publication_announcement';
+	const PUBLICATION_ANNOUNCEMENT_NONCE_NAME = '_ediworman_announcement_nonce';
+
+	/**
 	 * Register admin menu and settings hooks.
 	 *
 	 * @return void
@@ -27,6 +35,104 @@ class EDIWORMAN_Settings {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_publication_announcement' ) );
+		add_action( 'wp_ajax_' . self::PUBLICATION_ANNOUNCEMENT_ACTION, array( $this, 'dismiss_publication_announcement_ajax' ) );
+		add_action( 'admin_post_' . self::PUBLICATION_ANNOUNCEMENT_ACTION, array( $this, 'dismiss_publication_announcement_post' ) );
+	}
+
+	/**
+	 * Determine whether this administrator has seen this site's announcement.
+	 *
+	 * @return bool
+	 */
+	private function show_publication_announcement() {
+		return current_user_can( 'manage_options' ) && self::PUBLICATION_ANNOUNCEMENT_VERSION !== get_user_option( self::PUBLICATION_ANNOUNCEMENT_USER_OPTION );
+	}
+
+	/**
+	 * Load dismissal behavior only on the settings page while the notice is shown.
+	 *
+	 * @param string $hook_suffix Current admin screen hook.
+	 * @return void
+	 */
+	public function enqueue_publication_announcement( $hook_suffix ) {
+		if ( 'settings_page_ediworman-settings' !== $hook_suffix || ! $this->show_publication_announcement() ) {
+			return;
+		}
+		wp_enqueue_script( 'ediworman-publication-announcement', EDIWORMAN_URL . 'assets/js/publication-announcement.js', array(), EDIWORMAN_VERSION, true );
+		wp_localize_script(
+			'ediworman-publication-announcement',
+			'EDIWORMAN_PUBLICATION_ANNOUNCEMENT',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'error'   => __( 'The announcement could not be dismissed. Please try again.', 'editorial-workflow-manager' ),
+			)
+		);
+	}
+
+	/**
+	 * Persist only this user's site-specific dismissal, never publication settings.
+	 *
+	 * @return bool
+	 */
+	private function store_publication_announcement_dismissal() {
+		return update_user_option( get_current_user_id(), self::PUBLICATION_ANNOUNCEMENT_USER_OPTION, self::PUBLICATION_ANNOUNCEMENT_VERSION, false ) || ! $this->show_publication_announcement();
+	}
+
+	/**
+	 * Dismiss without navigating away from unsaved settings.
+	 *
+	 * @return void
+	 */
+	public function dismiss_publication_announcement_ajax() {
+		check_ajax_referer( self::PUBLICATION_ANNOUNCEMENT_ACTION, self::PUBLICATION_ANNOUNCEMENT_NONCE_NAME );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to dismiss this announcement.', 'editorial-workflow-manager' ) ), 403 );
+		}
+		if ( ! $this->store_publication_announcement_dismissal() ) {
+			wp_send_json_error( array( 'message' => __( 'The announcement could not be dismissed. Please try again.', 'editorial-workflow-manager' ) ), 500 );
+		}
+		wp_send_json_success();
+	}
+
+	/**
+	 * Accessible form fallback when JavaScript is unavailable.
+	 *
+	 * @return void
+	 */
+	public function dismiss_publication_announcement_post() {
+		check_admin_referer( self::PUBLICATION_ANNOUNCEMENT_ACTION, self::PUBLICATION_ANNOUNCEMENT_NONCE_NAME );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to dismiss this announcement.', 'editorial-workflow-manager' ), '', array( 'response' => 403 ) );
+		}
+		if ( ! $this->store_publication_announcement_dismissal() ) {
+			wp_die( esc_html__( 'The announcement could not be dismissed. Please try again.', 'editorial-workflow-manager' ), '', array( 'response' => 500, 'back_link' => true ) );
+		}
+		wp_safe_redirect( admin_url( 'options-general.php?page=ediworman-settings' ) );
+		exit;
+	}
+
+	/**
+	 * Render feature discovery outside the independent Settings API form.
+	 *
+	 * @return void
+	 */
+	private function render_publication_announcement() {
+		if ( ! $this->show_publication_announcement() ) {
+			return;
+		}
+		?>
+		<div id="ediworman-publication-announcement" class="notice notice-info">
+			<p><strong><?php esc_html_e( 'New in 1.3.0: Optional publication blocking', 'editorial-workflow-manager' ); ?></strong></p>
+			<p><?php esc_html_e( 'No action is required after updating. Advisory remains the default. To require checklist readiness before first publication or scheduling, choose Block for a post type below and save changes. Published and private posts remain editable; scheduled posts are checked again when due.', 'editorial-workflow-manager' ); ?></p>
+			<form id="ediworman-publication-announcement-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::PUBLICATION_ANNOUNCEMENT_ACTION ); ?>">
+				<?php wp_nonce_field( self::PUBLICATION_ANNOUNCEMENT_ACTION, self::PUBLICATION_ANNOUNCEMENT_NONCE_NAME, false ); ?>
+				<p><button type="submit" class="button-link"><?php esc_html_e( 'Dismiss this announcement', 'editorial-workflow-manager' ); ?></button></p>
+				<p id="ediworman-publication-announcement-status" role="status" aria-live="polite" aria-atomic="true"></p>
+			</form>
+		</div>
+		<?php
 	}
 
 	/**
@@ -68,22 +174,43 @@ class EDIWORMAN_Settings {
 	 * @return array
 	 */
 	public function sanitize_settings( $input ) {
+		$existing = get_option( self::OPTION_NAME, array() );
+		$existing = is_array( $existing ) ? $existing : array();
 		if ( ! is_array( $input ) ) {
-			return array(
-				'post_type_templates' => array(),
-			);
+			return $existing;
 		}
 
 		$raw_mappings = isset( $input['post_type_templates'] ) && is_array( $input['post_type_templates'] )
 			? $input['post_type_templates']
 			: array();
 
-		return array(
-			'post_type_templates' => self::sanitize_post_type_template_mappings(
-				$raw_mappings,
-				array_keys( self::get_settings_post_types() )
-			),
-		);
+		$mappings = self::sanitize_post_type_template_mappings( $raw_mappings, array_keys( self::get_settings_post_types() ) );
+		$modes    = isset( $input['publication_modes'] ) && is_array( $input['publication_modes'] ) ? $input['publication_modes'] : ( $existing['publication_modes'] ?? array() );
+		$policies = array();
+		foreach ( self::get_settings_post_types() as $post_type => $post_type_object ) {
+			$mode = isset( $modes[ $post_type ] ) && 'block' === $modes[ $post_type ] ? 'block' : 'advisory';
+			if ( 'block' === $mode && empty( $mappings[ $post_type ] ) && 'block' !== ( $existing['publication_modes'][ $post_type ] ?? '' ) ) {
+				$mode = 'advisory';
+				add_settings_error( self::OPTION_NAME, 'ediworman_publication_template_' . $post_type, __( 'Assign a valid checklist template before enabling Block publication.', 'editorial-workflow-manager' ) );
+			}
+			$policies[ $post_type ] = $mode;
+		}
+
+		return array( 'post_type_templates' => $mappings, 'publication_modes' => $policies );
+	}
+
+	/**
+	 * Return the effective publication mode, including orphaned Block policies.
+	 *
+	 * @param string $post_type Post type slug.
+	 * @return string
+	 */
+	public static function get_publication_mode( $post_type ) {
+		if ( ! EDIWORMAN_Readiness::is_cacheable_post_type( $post_type ) || 'revision' === $post_type ) {
+			return 'advisory';
+		}
+		$settings = get_option( self::OPTION_NAME, array() );
+		return is_array( $settings ) && 'block' === ( $settings['publication_modes'][ $post_type ] ?? '' ) ? 'block' : 'advisory';
 	}
 
 	/**
@@ -107,6 +234,7 @@ class EDIWORMAN_Settings {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Editorial Workflow Settings', 'editorial-workflow-manager' ); ?></h1>
+			<?php $this->render_publication_announcement(); ?>
 
 			<p>
 				<?php esc_html_e( 'Use checklist templates to enforce a consistent review process before publishing content.', 'editorial-workflow-manager' ); ?>
@@ -158,6 +286,7 @@ class EDIWORMAN_Settings {
 										<tr>
 											<th style="text-align:left;"><?php esc_html_e( 'Post type', 'editorial-workflow-manager' ); ?></th>
 											<th style="text-align:left;"><?php esc_html_e( 'Checklist template', 'editorial-workflow-manager' ); ?></th>
+											<th style="text-align:left;"><?php esc_html_e( 'Publication policy', 'editorial-workflow-manager' ); ?></th>
 										</tr>
 									</thead>
 									<tbody>
@@ -184,10 +313,20 @@ class EDIWORMAN_Settings {
 														<?php endforeach; ?>
 													</select>
 												</td>
+												<td>
+													<label class="screen-reader-text" for="ediworman-publication-<?php echo esc_attr( $post_type ); ?>">
+														<?php printf( /* translators: %s: post type name. */ esc_html__( 'Publication policy for %s', 'editorial-workflow-manager' ), esc_html( $post_type_object->labels->singular_name ) ); ?>
+													</label>
+													<select id="ediworman-publication-<?php echo esc_attr( $post_type ); ?>" name="ediworman_settings[publication_modes][<?php echo esc_attr( $post_type ); ?>]" aria-describedby="ediworman-publication-help">
+														<option value="advisory" <?php selected( self::get_publication_mode( $post_type ), 'advisory' ); ?>><?php esc_html_e( 'Advisory', 'editorial-workflow-manager' ); ?></option>
+														<option value="block" <?php selected( self::get_publication_mode( $post_type ), 'block' ); ?>><?php esc_html_e( 'Block', 'editorial-workflow-manager' ); ?></option>
+													</select>
+												</td>
 											</tr>
 										<?php endforeach; ?>
 									</tbody>
 								</table>
+								<p id="ediworman-publication-help" class="description"><?php esc_html_e( 'Advisory shows warnings. Block requires completion before first publication or scheduling, and checks scheduled posts again when due. Published and private posts remain editable. If a template is removed, assign a replacement or choose Advisory.', 'editorial-workflow-manager' ); ?></p>
 							</td>
 						</tr>
 					</tbody>

@@ -10,7 +10,7 @@ The `1.0.0` baseline was already complete within its lightweight Gutenberg check
 |---|---|
 | **Implemented in Free 1.1.0** | Automated Requirements Lite with five built-in checks. |
 | **Implemented in Free 1.2.0** | A stable PHP and JavaScript rule-registration API for code-defined checks. |
-| **Add to Free after the rule architecture is validated** | A basic opt-in **Advisory / Block** publication policy per post type. |
+| **Implemented in Free 1.3.0** | A basic opt-in **Advisory / Block** publication policy per post type. |
 | **Keep in Pro** | Advanced rules, no-code rule composition, integrations, granular policies, bypass governance, approvals, notifications, audit history, portability, Classic Editor support, and premium administration. |
 | **Keep in premium packs** | Agency, Publisher, and Compliance capabilities. |
 | **Do not add to the core roadmap** | Social scheduling, social analytics, generic project management, AI content generation, or a mandatory SaaS dependency. |
@@ -106,18 +106,18 @@ The rule engine should be extensible in Free so agencies and developers can impl
 
 The Free API should not include a no-code rule builder, third-party commercial adapters, conditional policy composition, or premium support guarantees.
 
-## 3. Basic opt-in publication blocking
+## 3. Basic opt-in publication blocking (implemented in 1.3.0)
 
-Add this only after the rule engine and server validation have proven reliable.
+Implemented after the rule engine and server validation were verified. See [Publication policy](publication-policy.md) for supported save paths, scheduled-post recovery, and the defensive rollback limitation of direct `wp_publish_post()` calls.
 
 ### Free policy scope
 
 - Provide only **Advisory** and **Block** modes.
 - Configure the mode per mapped post type.
 - Default every post type to Advisory so existing behavior does not change after update.
-- Block publication when a required manual item or enabled free automatic rule fails.
+- Block first publication or scheduling when a required manual item or enabled, applicable registered automatic rule fails; published/private posts remain editable.
 - Revalidate current results authoritatively on the server before allowing publication.
-- Cover Gutenberg, REST updates, Quick Edit, bulk actions, and direct status transitions.
+- Cover Gutenberg, REST updates, Quick Edit, bulk actions, and supported save APIs; defensively roll back direct publication and recheck scheduled posts when due.
 - Provide an accessible editor explanation listing what must be completed.
 - Let an authorized administrator return the post type to Advisory mode through settings.
 
