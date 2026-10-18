@@ -1,38 +1,28 @@
-# Editorial Workflow Manager Pro: Consolidated Feature Plan
+# Editorial Workflow Manager: Pro Roadmap
 
-This document consolidates the paid-feature recommendations from:
+All functionality in this document is **planned, not available in the current free plugin**. It preserves the detailed paid catalog while recording delivery dependencies, not promised release dates or versions.
 
-- [Competitive Research Report](deep-research-report.md)
-- [Competitive Analysis v2](deep-research-report-v2.md)
-- [Competitive Research and Free/Pro Packaging Analysis v3](deep-research-report-v3.md)
+Refer to [product scope](product-scope.md) for authoritative feature placement and the [Free roadmap](free-roadmap.md) for implemented foundations and upcoming Free additions. The [rule-registration API](rule-registration-api.md) and [publication policy](publication-policy.md) describe existing technical contracts, not Pro features.
 
-It defines the proposed **Pro core** and the optional **Agency**, **Publisher**, and **Compliance** packs. Competitor features mentioned only as market context are not automatically included; this plan contains the features the reports recommend for Editorial Workflow Manager.
+This roadmap covers **Pro core** and the optional **Agency**, **Publisher**, and **Compliance** packs. Basic word/taxonomy limits, internal-link counts, post-type publication blocking, and basic JSON template transfer belong to Free, not the paid rule or portability library.
 
-## Product boundary
+## Relationship to Free
 
 The paid product should extend the free plugin from **baseline editorial validation** into **organization-specific policy, accountability, portability, scale, and governance**.
 
-- **Free** remains a complete, lightweight Gutenberg checklist and readiness product, with the planned Automated Requirements Lite rules, a public rule API, and an optional basic post-type publication gate.
-- **Pro** adds advanced validation, granular enforcement, approvals, notifications, portability, integrations, and support.
-- **Agency Pack** adds multi-site reuse, client review, branding, and agency-scale administration.
-- **Publisher Pack** adds pipeline planning, assignments, schedules, queues, and workload visibility.
-- **Compliance Pack** adds controlled approvals, durable evidence, retention, and audit exports.
+Free already provides the rule engine, public registration API, readiness surfaces, and basic Advisory / Block enforcement. Pro must extend those foundations rather than duplicate them or take away Free capabilities. Manual JSON file transfer between sites remains a Free capability once implemented; paid portability covers advanced workflows and managed operations.
 
 Paid functionality must be delivered in a separate Pro add-on or other WordPress.org-compatible architecture. The free WordPress.org plugin must not ship disabled, trial-limited, license-gated, or partially implemented Pro functionality.
 
-## Pro core
+## Planned Pro core
 
 ### 1. Advanced Automated Requirements
 
-Build organization-specific validation on the rule engine and public extension contract planned for Free.
+Build organization-specific validation on the existing Free rule engine and public extension contract.
 
 Pro rule library:
 
-- Maximum word count.
 - H1 count.
-- Configurable minimum or maximum category count beyond basic presence.
-- Configurable minimum or maximum tag count beyond basic presence.
-- Minimum internal-link count.
 - Required date field is populated.
 - Required author field is populated.
 - Advanced alternative-text length and conditional accessibility rules.
@@ -48,11 +38,11 @@ Rule-engine behavior:
 - Re-evaluate when relevant post data changes.
 - Cache results without allowing stale results to bypass server-side enforcement.
 - Extend the Free PHP and JavaScript rule registry without changing its result semantics.
-- Fail safely when an integration is missing, disabled, or returns unavailable data.
+- Handle missing, disabled, or unavailable integration data safely and explain the outcome. Preserve the Free API contract that inactive rule providers disappear from evaluation; do not claim that provider deactivation is automatically blocked.
 
 ### 2. Enforcement and policy modes
 
-Build granular policy controls on the planned Free Advisory / Block setting.
+Build granular policy controls on the existing Free Advisory / Block setting.
 
 - **Warning:** require explicit confirmation before continuing.
 - Configure Advisory, Warning, or Restrict modes by template, post type, or role.
@@ -108,14 +98,15 @@ Provide day-to-day traceability for teams and establish the foundation for the C
 
 Pro provides an operational history. Append-only guarantees, retention policies, evidence attachments, and formal exports belong in the Compliance Pack.
 
-### 6. Template portability
+### 6. Advanced workflow portability
 
-- Export checklist templates as versioned JSON.
-- Import JSON with schema validation and a safe preview.
-- Preserve required/optional items, helper text, URLs, automated rules, and policy settings.
-- Detect conflicts and offer create-new, skip, or update behavior.
-- Copy a template to another site through an explicit administrator action.
-- Keep imports additive and backward compatible.
+Basic JSON template export/import, manual transfer between sites, schema validation, and safe preservation of items/rule configuration belong to Free. Essential import safety is not a paid upgrade.
+
+- Port Pro-specific policy and approval configuration alongside supported template data.
+- Add advanced controlled update/merge and conflict-resolution workflows beyond basic safe template import.
+- Preview configuration differences and explicitly select create-new, skip, or update behavior for advanced workflow imports.
+- Support authenticated, explicit remote transfer of supported Pro configuration; fleet orchestration remains Agency work.
+- Keep all imports additive, versioned, backward compatible, and safe for existing Free data.
 
 Advanced bundles, cloning/version notes, network synchronization, and client-specific libraries belong in the Agency Pack.
 
@@ -149,7 +140,7 @@ Expose relevant SEO fields and scores to automated requirements without duplicat
 - Multisite-safe activation, permissions, and data handling.
 - WooCommerce product workflows as a later compatibility expansion.
 
-### 8. Optional Classic Editor support
+### 8. Optional Classic Editor and later editor compatibility
 
 This is a secondary Pro feature, not a change to the Gutenberg-first positioning.
 
@@ -158,6 +149,7 @@ This is a secondary Pro feature, not a change to the Gutenberg-first positioning
 - Support submission and approval actions.
 - Apply the same server-side publish gate.
 - Avoid promising feature parity with the Gutenberg experience unless it is fully tested.
+- Evaluate dedicated page-builder compatibility only later, after Gutenberg rules, enforcement, and approvals are stable.
 
 ### 9. Pro administration and support
 
@@ -168,7 +160,7 @@ This is a secondary Pro feature, not a change to the Gutenberg-first positioning
 - Preserve all existing templates, mappings, checklist state, and readiness data when Pro is activated or removed.
 - Premium product documentation and support.
 
-## Agency Pack
+## Planned Agency Pack
 
 The Agency Pack should focus on **scale, brand control, reusable processes, and client transparency**.
 
@@ -193,7 +185,7 @@ The Agency Pack should focus on **scale, brand control, reusable processes, and 
 - Template bundles for different clients or services.
 - Clone templates with version notes.
 - Export and import complete workflow configurations.
-- Copy templates between managed sites.
+- Remotely copy templates between managed sites; ordinary manual JSON transfer remains Free.
 - Per-client starter-template libraries.
 - Preview changes before updating an existing remote template.
 
@@ -211,7 +203,7 @@ The Agency Pack should focus on **scale, brand control, reusable processes, and 
 - Weekly workflow and readiness digests.
 - Client- or site-scoped reporting.
 
-## Publisher Pack
+## Planned Publisher Pack
 
 The Publisher Pack should focus on **pipeline visibility, scheduling, ownership, and workload**.
 
@@ -241,9 +233,9 @@ The Publisher Pack should focus on **pipeline visibility, scheduling, ownership,
 - Send assignment and deadline reminders.
 - Preserve checklist readiness as a visible signal throughout planning views.
 
-The research specifically recommends building this after the Pro rules engine and enforcement foundation because calendar competition is already crowded.
+Build this after the Pro rules, policy, and accountability foundation so planning views remain tied to meaningful readiness and workflow signals rather than becoming a separate generic planning suite.
 
-## Compliance Pack
+## Planned Compliance Pack
 
 The Compliance Pack should focus on **controlled sign-off, audit readiness, durable evidence, and governance**.
 
@@ -287,26 +279,36 @@ The Compliance Pack should focus on **controlled sign-off, audit readiness, dura
 ### Phase 1: Pro foundation
 
 1. Pro add-on architecture, compatibility checks, capabilities, and migrations.
-2. Advanced rules built on the Free rule engine and registration API.
-3. Per-template and per-role Advisory, Warning, and Restrict policies.
-4. Role-based bypass permissions, reasons, and audit recording.
+2. A setup flow, data preservation on activation/removal, and premium administration/documentation.
 
-### Phase 2: Accountability
+### Phase 2: Advanced rules and policies
+
+1. H1/date/author and advanced accessibility rules, conditional rules, and no-code composition built on the Free registry.
+2. Per-template and per-role Advisory, Warning, and Restrict policies.
+3. Role-based bypass permissions and reasons, with audit recording delivered alongside the first bypass feature.
+
+### Phase 3: Accountability, notifications, and audit
 
 1. Assignees and lightweight approval states.
 2. Email notifications and workflow hooks.
 3. Basic audit log.
-4. Template import/export.
+4. Signed webhooks, retries, failure logs, and notification preferences; add overdue reminders when due dates are available.
 
-### Phase 3: Integrations
+### Phase 4: Advanced workflow portability
+
+1. Pro policy/approval configuration transfer and advanced controlled import/update workflows.
+2. Build on Free JSON template portability rather than introducing a competing basic format or restricting Free transfer.
+
+### Phase 5: Integrations and compatibility
 
 1. Yoast SEO, Rank Math, and All in One SEO.
 2. Advanced Custom Fields.
 3. Co-Authors Plus or PublishPress Authors.
 4. WPML or Polylang.
 5. Multisite compatibility and optional WooCommerce expansion.
+6. Optional Classic Editor support; evaluate page builders only after the core editor workflows are stable.
 
-### Phase 4: Premium packs
+### Phase 6: Premium packs
 
 1. Agency Pack.
 2. Publisher Pack.
@@ -314,7 +316,7 @@ The Compliance Pack should focus on **controlled sign-off, audit readiness, dura
 
 ## Features deliberately excluded from the Pro scope
 
-These competitor capabilities were discussed in the reports but were not recommended as part of Editorial Workflow Manager's paid differentiation:
+Follow the exclusions in [product scope](product-scope.md). In particular, this roadmap does not include:
 
 - Social-media scheduling and auto-posting.
 - A generic project-management suite unrelated to editorial readiness.

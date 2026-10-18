@@ -50,15 +50,13 @@ Current release: **1.3.0**
 ## Documentation and Roadmap
 
 - [WordPress.org listing and release history](readme.txt)
-- [Original competitive research](docs/deep-research-report.md)
-- [Competitive research v2](docs/deep-research-report-v2.md)
-- [Competitive research v3](docs/deep-research-report-v3.md)
-- [Current free-plugin recommendations (v3)](docs/version-3-recommendations.md)
-- [Planned Pro feature catalog](docs/pro-version-features.md)
+- [Product scope and Free/paid boundaries](docs/product-scope.md)
+- [Free roadmap and implementation status](docs/free-roadmap.md)
+- [Planned Pro and premium-pack roadmap](docs/pro-roadmap.md)
 - [Automatic requirement rule API](docs/rule-registration-api.md)
 - [Publication policy behavior and integration limits](docs/publication-policy.md)
 
-The research and Pro documents are planning materials. Only the features listed under **Free Version Features** are included in the current plugin.
+Product scope defines feature placement, while the roadmaps distinguish completed work from planned additions. Planned Free, Pro, and premium-pack features are not availability claims. Only the features listed under **Free Version Features** are included in the current plugin. Historical research and superseded plans remain available in Git history.
 
 ## Data Model (Backward Compatible)
 
