@@ -16,15 +16,17 @@ class EDIWORMAN_Automatic_Requirements {
 
 	const META_KEY               = '_ediworman_automatic_requirements';
 	const DEFAULT_MINIMUM_WORDS  = 300;
+	const DEFAULT_MAXIMUM_WORDS  = 1000;
 	const MAXIMUM_WORDS          = 100000;
 	const FEATURED_IMAGE         = 'featured_image';
 	const EXCERPT                = 'excerpt';
 	const MINIMUM_WORD_COUNT     = 'minimum_word_count';
+	const MAXIMUM_WORD_COUNT     = 'maximum_word_count';
 	const TAXONOMY_PRESENCE      = 'taxonomy_presence';
 	const IMAGE_ALT_TEXT         = 'image_alt_text';
 
 	/**
-	 * Register the five built-in rules with the shared registry.
+	 * Register the built-in rules with the shared registry.
 	 *
 	 * @return void
 	 */
@@ -34,6 +36,7 @@ class EDIWORMAN_Automatic_Requirements {
 			self::FEATURED_IMAGE     => array( 'post_fields' => array( 'featured_media' ) ),
 			self::EXCERPT            => array( 'post_fields' => array( 'post_excerpt' ) ),
 			self::MINIMUM_WORD_COUNT => array( 'post_fields' => array( 'post_content' ) ),
+			self::MAXIMUM_WORD_COUNT => array( 'post_fields' => array( 'post_content' ) ),
 			self::TAXONOMY_PRESENCE  => array( 'taxonomies' => array( 'category', 'post_tag' ) ),
 			self::IMAGE_ALT_TEXT     => array(
 				'post_fields'    => array( 'post_content', 'featured_media' ),
@@ -66,6 +69,7 @@ class EDIWORMAN_Automatic_Requirements {
 			self::FEATURED_IMAGE,
 			self::EXCERPT,
 			self::MINIMUM_WORD_COUNT,
+			self::MAXIMUM_WORD_COUNT,
 			self::TAXONOMY_PRESENCE,
 			self::IMAGE_ALT_TEXT,
 		);
@@ -84,7 +88,7 @@ class EDIWORMAN_Automatic_Requirements {
 	 * Return normalized automatic requirement configuration for a template.
 	 *
 	 * @param int $template_id Checklist template ID.
-	 * @return array<string, array{enabled:bool,minimum?:int}>
+	 * @return array<string, array{enabled:bool,minimum?:int,maximum?:int}>
 	 */
 	public static function get_template_config( $template_id ) {
 		$template_id = absint( $template_id );
@@ -99,7 +103,7 @@ class EDIWORMAN_Automatic_Requirements {
 	 * Sanitize automatic requirement configuration against the fixed Lite rules.
 	 *
 	 * @param mixed $raw_config Raw configuration.
-	 * @return array<string, array{enabled:bool,minimum?:int}>
+	 * @return array<string, array{enabled:bool,minimum?:int,maximum?:int}>
 	 */
 	public static function sanitize_config( $raw_config ) {
 		$raw_config = is_array( $raw_config ) ? $raw_config : array();
@@ -124,6 +128,12 @@ class EDIWORMAN_Automatic_Requirements {
 					max( 1, $minimum )
 				);
 			}
+			if ( self::MAXIMUM_WORD_COUNT === $rule_key ) {
+				$maximum = isset( $raw_rule['maximum'] ) && is_scalar( $raw_rule['maximum'] )
+					? absint( $raw_rule['maximum'] )
+					: self::DEFAULT_MAXIMUM_WORDS;
+				$config[ $rule_key ]['maximum'] = min( self::MAXIMUM_WORDS, max( 1, $maximum ) );
+			}
 		}
 
 		// Keep unavailable custom registrations so their enablement returns when
@@ -140,6 +150,37 @@ class EDIWORMAN_Automatic_Requirements {
 		}
 
 		return $config;
+	}
+
+	/**
+	 * Validate enabled word bounds before normalizing a template submission.
+	 *
+	 * @param array $raw_config Unslashed submitted automatic requirements.
+	 * @return string Empty on success, otherwise an allow-listed error code.
+	 */
+	public static function validate_word_limits( $raw_config ) {
+		$bounds = array();
+		foreach ( array( self::MINIMUM_WORD_COUNT => 'minimum', self::MAXIMUM_WORD_COUNT => 'maximum' ) as $rule_id => $field ) {
+			$rule = isset( $raw_config[ $rule_id ] ) && is_array( $raw_config[ $rule_id ] ) ? $raw_config[ $rule_id ] : array();
+			if ( ! self::normalize_enabled( $rule['enabled'] ?? false ) ) {
+				continue;
+			}
+			$value = $rule[ $field ] ?? null;
+			if ( ( ! is_int( $value ) && ! is_string( $value ) ) || ! preg_match( '/^[0-9]+$/D', (string) $value ) || (float) $value < 1 || (float) $value > self::MAXIMUM_WORDS ) {
+				return 'invalid';
+			}
+			$bounds[ $field ] = (int) $value;
+		}
+		return isset( $bounds['minimum'], $bounds['maximum'] ) && $bounds['minimum'] > $bounds['maximum'] ? 'range' : '';
+	}
+
+	/**
+	 * Share PHP's HTML 4 entity vocabulary with the provisional editor counter.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function get_word_count_entities() {
+		return array_flip( get_html_translation_table( HTML_ENTITIES, ENT_QUOTES, get_bloginfo( 'charset' ) ) );
 	}
 
 	/**
@@ -160,6 +201,10 @@ class EDIWORMAN_Automatic_Requirements {
 			self::MINIMUM_WORD_COUNT => array(
 				'label'       => __( 'Minimum word count', 'editorial-workflow-manager' ),
 				'description' => __( 'Counts readable words in the post content.', 'editorial-workflow-manager' ),
+			),
+			self::MAXIMUM_WORD_COUNT => array(
+				'label'       => __( 'Maximum word count', 'editorial-workflow-manager' ),
+				'description' => __( 'Limits readable words in the post content. Empty content passes this check; enable a minimum separately if needed.', 'editorial-workflow-manager' ),
 			),
 			self::TAXONOMY_PRESENCE  => array(
 				'label'       => __( 'Category or tag present', 'editorial-workflow-manager' ),
@@ -225,6 +270,9 @@ class EDIWORMAN_Automatic_Requirements {
 
 			if ( self::MINIMUM_WORD_COUNT === $rule_key ) {
 				$rule['minimum'] = (int) $config[ $rule_key ]['minimum'];
+			}
+			if ( self::MAXIMUM_WORD_COUNT === $rule_key ) {
+				$rule['maximum'] = (int) $config[ $rule_key ]['maximum'];
 			}
 
 			$rules[] = $rule;
@@ -320,6 +368,24 @@ class EDIWORMAN_Automatic_Requirements {
 				$passed       = $thumbnail && 'attachment' === $thumbnail->post_type;
 				$message      = $passed ? __( 'Featured image detected.', 'editorial-workflow-manager' ) : __( 'Add a featured image.', 'editorial-workflow-manager' );
 				break;
+			case self::MAXIMUM_WORD_COUNT:
+				$maximum    = (int) ( $config['maximum'] ?? self::DEFAULT_MAXIMUM_WORDS );
+				$word_count = self::count_words( $post->post_content );
+				$passed     = $word_count <= $maximum;
+				$message    = $passed
+					? sprintf(
+						/* translators: 1: current word count, 2: allowed maximum word count. */
+						__( '%1$d words; maximum %2$d.', 'editorial-workflow-manager' ),
+						$word_count,
+						$maximum
+					)
+					: sprintf(
+						/* translators: 1: current word count, 2: allowed maximum word count. */
+						__( '%1$d words; maximum %2$d. Shorten the content to meet the limit.', 'editorial-workflow-manager' ),
+						$word_count,
+						$maximum
+					);
+				break;
 			case self::EXCERPT:
 				$passed  = '' !== trim( wp_strip_all_tags( (string) $post->post_excerpt ) );
 				$message = $passed ? __( 'Excerpt detected.', 'editorial-workflow-manager' ) : __( 'Add a manual excerpt.', 'editorial-workflow-manager' );
@@ -371,6 +437,13 @@ class EDIWORMAN_Automatic_Requirements {
 	 * @return string
 	 */
 	private static function get_readiness_label( $rule_key, $config ) {
+		if ( self::MAXIMUM_WORD_COUNT === $rule_key ) {
+			return sprintf(
+				/* translators: %d: allowed maximum word count. */
+				__( 'At most %d words', 'editorial-workflow-manager' ),
+				(int) ( $config['maximum'] ?? self::DEFAULT_MAXIMUM_WORDS )
+			);
+		}
 		if ( self::MINIMUM_WORD_COUNT === $rule_key ) {
 			return sprintf(
 				/* translators: %d: minimum required word count. */
@@ -439,6 +512,7 @@ class EDIWORMAN_Automatic_Requirements {
 			case self::TAXONOMY_PRESENCE:
 				return ! empty( $taxonomies );
 			case self::MINIMUM_WORD_COUNT:
+			case self::MAXIMUM_WORD_COUNT:
 			case self::IMAGE_ALT_TEXT:
 				return post_type_supports( $post_type, 'editor' );
 		}

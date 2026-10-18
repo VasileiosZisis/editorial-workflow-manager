@@ -15,6 +15,59 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EDIWORMAN_Templates_CPT {
 
 	/**
+	 * Request-local validation errors carried through the native save redirect.
+	 *
+	 * @var array<int,string>
+	 */
+	private $word_limit_errors = array();
+
+	/**
+	 * Include a signed, post-scoped validation code in the native redirect.
+	 *
+	 * @param string $location Native redirect URL.
+	 * @param int    $post_id  Saved template ID.
+	 * @return string
+	 */
+	public function add_word_limit_error_to_redirect( $location, $post_id ) {
+		$location = remove_query_arg( array( 'ediworman_word_limits_error', '_ediworman_word_limits_nonce' ), $location );
+		if ( isset( $this->word_limit_errors[ $post_id ] ) ) {
+			$location = add_query_arg(
+				array(
+					'ediworman_word_limits_error' => $this->word_limit_errors[ $post_id ],
+					'_ediworman_word_limits_nonce' => wp_create_nonce( 'ediworman_word_limits_error_' . $post_id ),
+				),
+				$location
+			);
+		}
+		return $location;
+	}
+
+	/**
+	 * Explain a rejected pair only on its editable template screen.
+	 *
+	 * @return void
+	 */
+	public function render_word_limit_error() {
+		$screen = get_current_screen();
+		global $post;
+		if ( ! $screen || 'post' !== $screen->base || 'ediworman_template' !== $screen->post_type || ! $post instanceof WP_Post ) {
+			return;
+		}
+		$nonce = isset( $_GET['_ediworman_word_limits_nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_ediworman_word_limits_nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'ediworman_word_limits_error_' . $post->ID ) || ! current_user_can( 'edit_post', $post->ID ) ) {
+			return;
+		}
+		$error = isset( $_GET['ediworman_word_limits_error'] ) ? sanitize_key( wp_unslash( $_GET['ediworman_word_limits_error'] ) ) : '';
+		$messages = array(
+			'invalid' => __( 'Word limits were not changed. Enabled limits must be whole numbers between 1 and 100,000. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
+			'range'   => __( 'Word limits were not changed. Minimum words cannot exceed maximum words when both are enabled. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
+		);
+		if ( isset( $messages[ $error ] ) ) {
+			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $messages[ $error ] ) . '</p></div>';
+		}
+	}
+
+	/**
 	 * Register CPT and meta box hooks.
 	 *
 	 * @return void
@@ -31,6 +84,8 @@ class EDIWORMAN_Templates_CPT {
 
 		// Save checklist items.
 		add_action( 'save_post_ediworman_template', array( $this, 'save_template_meta' ), 10, 2 );
+		add_filter( 'redirect_post_location', array( $this, 'add_word_limit_error_to_redirect' ), 10, 2 );
+		add_action( 'admin_notices', array( $this, 'render_word_limit_error' ) );
 
 		// Template duplication action.
 		add_filter( 'post_row_actions', array( $this, 'filter_row_actions' ), 10, 2 );
@@ -260,6 +315,8 @@ class EDIWORMAN_Templates_CPT {
 				/* translators: %s: removed checklist item label. */
 				'removedAllAnnouncement'  => __( 'Removed %s. No items remain.', 'editorial-workflow-manager' ),
 				'validationAnnouncement'  => __( 'Please correct the highlighted checklist item labels.', 'editorial-workflow-manager' ),
+				'wordLimitInvalid'        => __( 'Enter a whole number between 1 and 100,000 for each enabled word limit.', 'editorial-workflow-manager' ),
+				'wordLimitRange'          => __( 'Maximum words must be greater than or equal to minimum words when both are enabled.', 'editorial-workflow-manager' ),
 			)
 		);
 	}
@@ -383,16 +440,21 @@ class EDIWORMAN_Templates_CPT {
 						<strong><?php echo esc_html( $definition['label'] ); ?></strong>
 					</label>
 
-					<?php if ( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT === $rule_key ) : ?>
-						<?php $minimum_id = $rule_id . '-minimum'; ?>
-						<label class="ediworman-automatic-requirement__setting" for="<?php echo esc_attr( $minimum_id ); ?>">
-							<?php esc_html_e( 'Required words', 'editorial-workflow-manager' ); ?>
+					<?php if ( in_array( $rule_key, array( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT, EDIWORMAN_Automatic_Requirements::MAXIMUM_WORD_COUNT ), true ) ) : ?>
+						<?php
+						$bound    = EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT === $rule_key ? 'minimum' : 'maximum';
+						$bound_id = $rule_id . '-' . $bound;
+						?>
+						<label class="ediworman-automatic-requirement__setting" for="<?php echo esc_attr( $bound_id ); ?>">
+							<?php echo 'minimum' === $bound ? esc_html__( 'Minimum words', 'editorial-workflow-manager' ) : esc_html__( 'Maximum words', 'editorial-workflow-manager' ); ?>
 							<input
 								type="number"
 								class="small-text"
-								id="<?php echo esc_attr( $minimum_id ); ?>"
-								name="ediworman_automatic_requirements[<?php echo esc_attr( $rule_key ); ?>][minimum]"
-								value="<?php echo esc_attr( (string) $config[ $rule_key ]['minimum'] ); ?>"
+								id="<?php echo esc_attr( $bound_id ); ?>"
+								name="ediworman_automatic_requirements[<?php echo esc_attr( $rule_key ); ?>][<?php echo esc_attr( $bound ); ?>]"
+								value="<?php echo esc_attr( (string) $config[ $rule_key ][ $bound ] ); ?>"
+								data-ediworman-word-bound="<?php echo esc_attr( $bound ); ?>"
+								aria-describedby="<?php echo esc_attr( $description_id ); ?> ediworman-word-limit-error"
 								min="1"
 								max="<?php echo esc_attr( (string) EDIWORMAN_Automatic_Requirements::MAXIMUM_WORDS ); ?>"
 								step="1"
@@ -416,6 +478,7 @@ class EDIWORMAN_Templates_CPT {
 					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
+			<p id="ediworman-word-limit-error" class="ediworman-template-item-error" role="status" aria-live="polite" aria-atomic="true"></p>
 		</section>
 		<?php
 	}
@@ -576,14 +639,16 @@ class EDIWORMAN_Templates_CPT {
 		}
 
 		$raw_automatic_requirements = array();
+		$submitted_automatic_requirements = array();
 		if (
 			isset( $_POST['ediworman_automatic_requirements_present'] ) &&
 			isset( $_POST['ediworman_automatic_requirements'] ) &&
 			is_array( $_POST['ediworman_automatic_requirements'] )
 		) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Numeric bounds are strictly validated; all stored values are sanitized by map_deep below.
+			$submitted_automatic_requirements = wp_unslash( $_POST['ediworman_automatic_requirements'] );
 			$raw_automatic_requirements = map_deep(
-				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nested values are unslashed and sanitized immediately.
-				wp_unslash( $_POST['ediworman_automatic_requirements'] ),
+				$submitted_automatic_requirements,
 				static function ( $value ) {
 					return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : $value;
 				}
@@ -601,6 +666,20 @@ class EDIWORMAN_Templates_CPT {
 		}
 
 		$automatic_requirements = EDIWORMAN_Automatic_Requirements::sanitize_config( $raw_automatic_requirements );
+		$word_limit_error       = EDIWORMAN_Automatic_Requirements::validate_word_limits( $submitted_automatic_requirements );
+		$previous_requirements  = EDIWORMAN_Automatic_Requirements::get_template_config( $post_id );
+		foreach ( array( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT => 'minimum', EDIWORMAN_Automatic_Requirements::MAXIMUM_WORD_COUNT => 'maximum' ) as $rule_id => $bound ) {
+			if ( $word_limit_error ) {
+				$automatic_requirements[ $rule_id ] = $previous_requirements[ $rule_id ];
+			} elseif ( empty( $automatic_requirements[ $rule_id ]['enabled'] ) && EDIWORMAN_Automatic_Requirements::validate_word_limits( array( $rule_id => array( 'enabled' => true, $bound => $submitted_automatic_requirements[ $rule_id ][ $bound ] ?? null ) ) ) ) {
+				$automatic_requirements[ $rule_id ][ $bound ] = $previous_requirements[ $rule_id ][ $bound ];
+			}
+		}
+		if ( $word_limit_error ) {
+			$this->word_limit_errors[ $post_id ] = $word_limit_error;
+		} else {
+			unset( $this->word_limit_errors[ $post_id ] );
+		}
 		$has_automatic_rules    = false;
 		foreach ( $automatic_requirements as $automatic_requirement ) {
 			if ( ! empty( $automatic_requirement['enabled'] ) ) {

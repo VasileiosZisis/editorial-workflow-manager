@@ -128,6 +128,7 @@ class EDIWORMAN_Editor_Assets {
 				'templateMode' => $template_mode,
 				'items'        => $items,
 				'automaticRequirements' => $automatic_data['rules'],
+				'wordCountEntities'     => array_intersect( array_column( $automatic_data['rules'], 'key' ), array( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT, EDIWORMAN_Automatic_Requirements::MAXIMUM_WORD_COUNT ) ) ? EDIWORMAN_Automatic_Requirements::get_word_count_entities() : array(),
 				'taxonomyRestBases'     => $automatic_data['taxonomyRestBases'],
 				'savedAutomaticResults' => $saved_results,
 				'ruleResultSchemaVersion' => EDIWORMAN_Rule_Registry::RESULT_SCHEMA_VERSION,

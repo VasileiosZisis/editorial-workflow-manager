@@ -24,6 +24,7 @@
       'featured_image',
       'excerpt',
       'minimum_word_count',
+      'maximum_word_count',
       'taxonomy_presence',
       'image_alt_text',
     ]);
@@ -92,6 +93,10 @@
               const minimum = parseInt(rule.minimum, 10);
               normalizedRule.minimum =
                 !Number.isNaN(minimum) && minimum > 0 ? minimum : 300;
+            }
+            if (rule.key === 'maximum_word_count') {
+              const maximum = parseInt(rule.maximum, 10);
+              normalizedRule.maximum = !Number.isNaN(maximum) && maximum > 0 ? maximum : 1000;
             }
 
             return normalizedRule;
@@ -239,16 +244,59 @@
   };
 
   const countWords = (content) => {
-    const text = String(content || '')
+    const html = String(content || '')
       .replace(/\[[^\]]*\]/g, ' ')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/&(?:#\d+|#x[a-f0-9]+|[a-z][a-z0-9]+);/gi, ' ');
+      .replace(/<(script|style)[^>]*?>[\s\S]*?<\/\1>/gi, '')
+      .replace(/\0/g, '');
+    // Like PHP strip_tags(), tags concatenate adjacent text rather than add spaces.
+    let stripped = '';
+    for (let i = 0; i < html.length; i++) {
+      if (html[i] !== '<' || /\s/.test(html[i + 1] || '')) {
+        stripped += html[i];
+        continue;
+      }
+      if (html.startsWith('<!--', i)) {
+        const end = html.indexOf('-->', i + 4);
+        i = end < 0 ? html.length : end + 2;
+        continue;
+      }
+      let quote = '';
+      let depth = 1;
+      const processingInstruction = html[i + 1] === '?';
+      while (++i < html.length) {
+        const character = html[i];
+        if (quote) {
+          if (character === quote) quote = '';
+        } else if (character === '"' || character === "'") {
+          quote = character;
+        } else if (processingInstruction) {
+          if (character === '>' && html[i - 1] === '?') break;
+        } else if (character === '<') {
+          depth++;
+        } else if (character === '>' && --depth === 0) {
+          break;
+        }
+      }
+    }
+    const entities = window.EDIWORMAN_CHECKLIST_DATA?.wordCountEntities || {};
+    const text = stripped.replace(/&(?:#[xX][0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);/g, (entity) => {
+      if (Object.prototype.hasOwnProperty.call(entities, entity)) return entities[entity];
+      if (!entity.startsWith('&#')) return entity;
+      const hex = entity[2].toLowerCase() === 'x';
+      const point = parseInt(entity.slice(hex ? 3 : 2, -1), hex ? 16 : 10);
+      // ENT_QUOTES uses HTML 4 decoding, not the browser's HTML 5 replacements.
+      if (point < 1 || point > 0x10ffff || (point < 32 && ![9, 10, 13].includes(point)) ||
+          (point >= 0x7f && point <= 0x9f) || (point >= 0xd800 && point <= 0xdfff)) return entity;
+      return String.fromCodePoint(point);
+    });
     const matches = text.match(/[\p{L}\p{N}]+(?:[\u2019'-][\p{L}\p{N}]+)*/gu);
     return matches ? matches.length : 0;
   };
 
   const evaluateAutomaticRequirements = (state, savedResults) => {
     const { automaticRequirements } = checklistData;
+    const wordCount = automaticRuleKeys.has('minimum_word_count') || automaticRuleKeys.has('maximum_word_count')
+      ? countWords(state.content) : 0;
 	const savedResultsByKey = new Map(
 	  savedResults.map((result) => [result.key, result]),
 	);
@@ -287,7 +335,6 @@
             : __('Add a manual excerpt.', 'editorial-workflow-manager');
           break;
         case 'minimum_word_count': {
-          const wordCount = countWords(state.content);
           passed = wordCount >= rule.minimum;
           message = sprintf(
             /* translators: 1: current word count, 2: required minimum word count */
@@ -295,6 +342,16 @@
             wordCount,
             rule.minimum,
           );
+          break;
+        }
+        case 'maximum_word_count': {
+          passed = wordCount <= rule.maximum;
+          const maximumMessage = passed
+            /* translators: 1: current word count, 2: allowed maximum word count. */
+            ? __('%1$d words; maximum %2$d.', 'editorial-workflow-manager')
+            /* translators: 1: current word count, 2: allowed maximum word count. */
+            : __('%1$d words; maximum %2$d. Shorten the content to meet the limit.', 'editorial-workflow-manager');
+          message = sprintf(maximumMessage, wordCount, rule.maximum);
           break;
         }
         case 'taxonomy_presence':
@@ -433,6 +490,7 @@
 		  (rule) => !rule.builtin && rule.hasClientEvaluator,
 		) ||
         automaticRuleKeys.has('minimum_word_count') ||
+        automaticRuleKeys.has('maximum_word_count') ||
         automaticRuleKeys.has('image_alt_text');
       const rawContent = needsContent
         ? editor.getEditedPostAttribute('content')

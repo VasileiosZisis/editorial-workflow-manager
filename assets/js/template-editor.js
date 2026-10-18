@@ -95,6 +95,54 @@
     }, 0);
   };
 
+  const wordInputs = Array.from(form.querySelectorAll('[data-ediworman-word-bound]'));
+  const wordError = document.getElementById('ediworman-word-limit-error');
+  const validateWordLimits = () => {
+    let invalid = null;
+    let error = '';
+    const bounds = {};
+    wordInputs.forEach((input) => {
+      const enabled = input.closest('.ediworman-automatic-requirement')
+        .querySelector('input[type="checkbox"]').checked;
+      input.required = enabled;
+      input.disabled = !enabled;
+      input.setCustomValidity('');
+      input.removeAttribute('aria-invalid');
+      if (!enabled) {
+        return;
+      }
+      if (!/^[0-9]+$/.test(input.value) || Number(input.value) < 1 || Number(input.value) > 100000) {
+        if (!invalid) {
+          invalid = input;
+          error = getMessage('wordLimitInvalid', 'Enter a whole number between 1 and 100,000 for each enabled word limit.');
+        }
+      } else {
+        bounds[input.dataset.ediwormanWordBound] = Number(input.value);
+      }
+    });
+    if (!invalid && bounds.minimum !== undefined && bounds.maximum !== undefined && bounds.minimum > bounds.maximum) {
+      invalid = wordInputs.find((input) => input.dataset.ediwormanWordBound === 'maximum');
+      error = getMessage('wordLimitRange', 'Maximum words must be greater than or equal to minimum words when both are enabled.');
+    }
+    if (invalid) {
+      invalid.setCustomValidity(error);
+      invalid.setAttribute('aria-invalid', 'true');
+    }
+    if (wordError) {
+      wordError.textContent = error;
+    }
+    return invalid;
+  };
+
+  form.addEventListener('input', validateWordLimits);
+  form.addEventListener('change', validateWordLimits);
+  form.addEventListener('invalid', (event) => {
+    const invalid = validateWordLimits();
+    if (invalid && wordInputs.includes(event.target)) {
+      invalid.focus();
+    }
+  }, true);
+
   const clearRowError = (row) => {
     const input = row.querySelector('.ediworman-template-item-label');
     const error = row.querySelector('.ediworman-template-item-error');
@@ -328,7 +376,7 @@
 
   form.addEventListener('submit', (event) => {
     const rows = getRows();
-    let firstInvalidInput = null;
+    let firstInvalidInput = validateWordLimits();
     const hasEnabledAutomaticRequirement = Array.from(
       form.querySelectorAll(
         '.ediworman-automatic-requirement input[type="checkbox"]',
@@ -370,9 +418,10 @@
     if (firstInvalidInput) {
       event.preventDefault();
       firstInvalidInput.focus();
-      announce(messages.validation);
+      announce(wordInputs.includes(firstInvalidInput) ? wordError.textContent : messages.validation);
     }
   });
 
   refreshRows();
+  validateWordLimits();
 })();

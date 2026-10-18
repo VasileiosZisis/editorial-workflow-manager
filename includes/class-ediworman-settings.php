@@ -22,7 +22,7 @@ class EDIWORMAN_Settings {
 	/**
 	 * Fixed feature announcement identity; routine updates must not reset it.
 	 */
-	const PUBLICATION_ANNOUNCEMENT_VERSION = '1.3.0';
+	const PUBLICATION_ANNOUNCEMENT_VERSION = '1.4.0';
 	const PUBLICATION_ANNOUNCEMENT_USER_OPTION = 'ediworman_publication_announcement_dismissed';
 	const PUBLICATION_ANNOUNCEMENT_ACTION = 'ediworman_dismiss_publication_announcement';
 	const PUBLICATION_ANNOUNCEMENT_NONCE_NAME = '_ediworman_announcement_nonce';
@@ -123,8 +123,8 @@ class EDIWORMAN_Settings {
 		}
 		?>
 		<div id="ediworman-publication-announcement" class="notice notice-info">
-			<p><strong><?php esc_html_e( 'New in 1.3.0: Optional publication blocking', 'editorial-workflow-manager' ); ?></strong></p>
-			<p><?php esc_html_e( 'No action is required after updating. Advisory remains the default. To require checklist readiness before first publication or scheduling, choose Block for a post type below and save changes. Published and private posts remain editable; scheduled posts are checked again when due.', 'editorial-workflow-manager' ); ?></p>
+			<p><strong><?php esc_html_e( 'New in 1.4.0: Maximum word count', 'editorial-workflow-manager' ); ?></strong></p>
+			<p><?php esc_html_e( 'No action is required after updating. Maximum word count is disabled by default. To set a content-length limit, edit a checklist template, enable Maximum word count, enter a limit, and save. Minimum and maximum are independent requirements; when both are enabled, minimum cannot exceed maximum. The maximum also applies to publication checks for post types using Block.', 'editorial-workflow-manager' ); ?></p>
 			<form id="ediworman-publication-announcement-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::PUBLICATION_ANNOUNCEMENT_ACTION ); ?>">
 				<?php wp_nonce_field( self::PUBLICATION_ANNOUNCEMENT_ACTION, self::PUBLICATION_ANNOUNCEMENT_NONCE_NAME, false ); ?>

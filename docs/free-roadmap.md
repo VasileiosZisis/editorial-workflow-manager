@@ -2,7 +2,7 @@
 
 This document tracks implementation status and delivery order for the Free plugin. [Product scope](product-scope.md) owns feature placement; technical behavior is documented in the [rule-registration API](rule-registration-api.md) and [publication policy](publication-policy.md).
 
-The current implemented baseline is **1.3.0**. The four additions below are **planned, not available in that baseline**. No future release numbers, dates, or effort estimates are assigned here.
+The current implemented baseline is **1.4.0**. Maximum word count is implemented; taxonomy count limits, internal-link count, and JSON portability remain planned. No future release numbers, dates, or effort estimates are assigned here.
 
 ## Completed milestones
 
@@ -13,14 +13,15 @@ The current implemented baseline is **1.3.0**. The four additions below are **pl
 | 1.1.0: Automated Requirements Lite | Featured image, excerpt, minimum words, basic category/tag presence, and image ALT coverage, integrated with editor/server readiness and manager visibility. |
 | 1.2.0: Developer extensibility | Versioned PHP/JavaScript rule registration, authoritative PHP evaluation, dependency-driven invalidation, saved-result refresh, API documentation, and a sample extension. |
 | 1.3.0: Optional publication blocking | Advisory / Block per post type; uncached validation on supported publication/scheduling paths; due scheduled-post revalidation; saved-work preservation and recovery messages; published/private updates remain editable; settings-only announcement with per-administrator/site dismissal. |
+| 1.4.0: Word-count limits | Independently enabled maximum words alongside minimum; inclusive limits; enabled-range validation preserving previous bounds; live counting aligned with existing authoritative PHP semantics; integration with all readiness and enforcement surfaces. |
 
 Publication blocking is already implemented and remains Free. Its documented direct `wp_publish_post()` rollback limitation is not a promise of complete protection for raw or unsupported publication paths.
 
-## Planned delivery order
+## Feature delivery order and status
 
 ### 1. Maximum word count alongside minimum
 
-**Status:** Planned; next user-facing feature.
+**Status:** Implemented in 1.4.0.
 
 **Purpose:** Support ordinary content-length limits without requiring Pro.
 
@@ -35,7 +36,7 @@ Publication blocking is already implemented and remains Free. Its documented dir
 
 ### 2. Minimum/maximum category and tag counts
 
-**Status:** Planned; follows word-count limits.
+**Status:** Planned; next user-facing feature after word-count limits.
 
 **Purpose:** Make taxonomy checks useful for ordinary publishing standards beyond presence alone.
 

@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,6 +48,7 @@ Built-in automatic checks include:
 * Featured image present.
 * Excerpt present.
 * Configurable minimum word count.
+* Independently configurable maximum word count.
 * Category or tag present.
 * Image alternative-text coverage for featured and content images.
 
@@ -162,6 +163,7 @@ Developer documentation is included in `docs/rule-registration-api.md`, together
 * Featured-image checking.
 * Excerpt checking.
 * Minimum word-count checking.
+* Maximum word-count checking.
 * Category or tag checking.
 * Image alternative-text checking.
 * Helper text and reference links.
@@ -243,7 +245,11 @@ Editorial Workflow Manager adds an editorial checklist directly to the WordPress
 
 Yes.
 
-Checklist templates can include automatic requirements for featured images, excerpts, minimum word count, category or tag presence, and image alternative-text coverage.
+Checklist templates can include automatic requirements for featured images, excerpts, minimum word count, maximum word count, category or tag presence, and image alternative-text coverage.
+
+Minimum and maximum words have separate enable toggles and each counts as one required rule. Maximum is disabled by default and initially offers a 1,000-word limit. Enabled limits must be whole numbers from 1 to 100,000, and minimum cannot exceed maximum when both are enabled. Invalid submissions preserve the previous word-limit pair while other valid checklist edits are saved. Empty content passes a maximum-only requirement.
+
+Both limits count readable saved content using the same PHP semantics: shortcode tags, HTML tags/comments, and script/style contents are excluded; HTML 4 entities are decoded; Unicode letter/number sequences with internal apostrophes or hyphens are counted. Adjacent HTML elements do not add spaces. The live checklist follows this behavior, which may differ from the editor's native word count; PHP validation remains authoritative.
 
 These checks update from the post content and contribute to the same Ready / Incomplete status as required manual checklist items.
 
@@ -347,6 +353,14 @@ A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
 
+= 1.4.0 =
+
+* Added an independently enabled maximum word-count requirement, including live editor feedback and authoritative publication validation.
+* Added enabled-limit validation and range checks that preserve the previous word limits on invalid submissions.
+* Aligned the live checklist word counter with existing PHP HTML-stripping and entity-decoding semantics without changing saved-post counting.
+* Integrated maximum-word failures with missing requirements, readiness filters, recalculation, and dashboard totals.
+* Replaced the settings-only announcement with maximum-word-count setup guidance, dismissible independently by each administrator.
+
 = 1.3.0 =
 
 * Added opt-in Advisory / Block publication policies per mapped post type, defaulting to Advisory.
@@ -383,6 +397,10 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+
+Adds an optional maximum word-count requirement alongside the existing minimum. Existing and starter templates keep maximum disabled until configured. Enabled limits must be valid whole numbers; live counts now mirror existing PHP validation.
 
 = 1.3.0 =
 

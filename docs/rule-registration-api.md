@@ -13,6 +13,8 @@ add_action( 'ediworman_register_rules', 'acme_register_editorial_rule' );
 
 Rule IDs must use lowercase `vendor/rule-name` form. Built-in IDs are reserved. `ediworman_register_rule()` returns `true` or `WP_Error`; extensions should not terminate the request when registration is rejected.
 
+Built-in IDs include `featured_image`, `excerpt`, `minimum_word_count`, `maximum_word_count` (added in 1.4.0), `taxonomy_presence`, and `image_alt_text`. Minimum and maximum word limits are separate enabled requirements; this addition does not change API version 1 or result schema version 1.
+
 ## PHP definition
 
 ```php
