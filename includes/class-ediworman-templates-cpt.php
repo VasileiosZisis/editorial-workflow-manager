@@ -22,6 +22,13 @@ class EDIWORMAN_Templates_CPT {
 	private $word_limit_errors = array();
 
 	/**
+	 * Request-local category/tag validation codes, keyed by template.
+	 *
+	 * @var array<int,array<string,string>>
+	 */
+	private $taxonomy_limit_errors = array();
+
+	/**
 	 * Include a signed, post-scoped validation code in the native redirect.
 	 *
 	 * @param string $location Native redirect URL.
@@ -29,11 +36,20 @@ class EDIWORMAN_Templates_CPT {
 	 * @return string
 	 */
 	public function add_word_limit_error_to_redirect( $location, $post_id ) {
-		$location = remove_query_arg( array( 'ediworman_word_limits_error', '_ediworman_word_limits_nonce' ), $location );
+		$location = remove_query_arg( array( 'ediworman_word_limits_error', '_ediworman_word_limits_nonce', 'ediworman_categories_limits_error', 'ediworman_tags_limits_error' ), $location );
 		if ( isset( $this->word_limit_errors[ $post_id ] ) ) {
 			$location = add_query_arg(
 				array(
 					'ediworman_word_limits_error' => $this->word_limit_errors[ $post_id ],
+					'_ediworman_word_limits_nonce' => wp_create_nonce( 'ediworman_word_limits_error_' . $post_id ),
+				),
+				$location
+			);
+		}
+		foreach ( $this->taxonomy_limit_errors[ $post_id ] ?? array() as $group => $error ) {
+			$location = add_query_arg(
+				array(
+					'ediworman_' . $group . '_limits_error' => $error,
 					'_ediworman_word_limits_nonce' => wp_create_nonce( 'ediworman_word_limits_error_' . $post_id ),
 				),
 				$location
@@ -64,6 +80,25 @@ class EDIWORMAN_Templates_CPT {
 		);
 		if ( isset( $messages[ $error ] ) ) {
 			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $messages[ $error ] ) . '</p></div>';
+		}
+		$taxonomy_errors = array(
+			'categories' => isset( $_GET['ediworman_categories_limits_error'] ) ? sanitize_key( wp_unslash( $_GET['ediworman_categories_limits_error'] ) ) : '',
+			'tags' => isset( $_GET['ediworman_tags_limits_error'] ) ? sanitize_key( wp_unslash( $_GET['ediworman_tags_limits_error'] ) ) : '',
+		);
+		$taxonomy_messages = array(
+			'categories' => array(
+				'invalid' => __( 'Category limits were not changed. Enabled minimums must be whole numbers from 1 to 100,000; maximums may also be zero. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
+				'range' => __( 'Category limits were not changed. Minimum categories cannot exceed maximum categories when both are enabled. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
+			),
+			'tags' => array(
+				'invalid' => __( 'Tag limits were not changed. Enabled minimums must be whole numbers from 1 to 100,000; maximums may also be zero. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
+				'range' => __( 'Tag limits were not changed. Minimum tags cannot exceed maximum tags when both are enabled. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
+			),
+		);
+		foreach ( $taxonomy_errors as $group => $code ) {
+			if ( isset( $taxonomy_messages[ $group ][ $code ] ) ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $taxonomy_messages[ $group ][ $code ] ) . '</p></div>';
+			}
 		}
 	}
 
@@ -317,6 +352,9 @@ class EDIWORMAN_Templates_CPT {
 				'validationAnnouncement'  => __( 'Please correct the highlighted checklist item labels.', 'editorial-workflow-manager' ),
 				'wordLimitInvalid'        => __( 'Enter a whole number between 1 and 100,000 for each enabled word limit.', 'editorial-workflow-manager' ),
 				'wordLimitRange'          => __( 'Maximum words must be greater than or equal to minimum words when both are enabled.', 'editorial-workflow-manager' ),
+				'taxonomyLimitInvalid'    => __( 'Enter a whole number from 1 to 100,000 for a minimum, or 0 to 100,000 for a maximum.', 'editorial-workflow-manager' ),
+				'categoryLimitRange'      => __( 'Maximum categories must be greater than or equal to minimum categories when both are enabled.', 'editorial-workflow-manager' ),
+				'tagLimitRange'           => __( 'Maximum tags must be greater than or equal to minimum tags when both are enabled.', 'editorial-workflow-manager' ),
 			)
 		);
 	}
@@ -411,6 +449,15 @@ class EDIWORMAN_Templates_CPT {
 	private function render_automatic_requirements( $template_id ) {
 		$config      = EDIWORMAN_Automatic_Requirements::get_template_config( $template_id );
 		$definitions = EDIWORMAN_Automatic_Requirements::get_rule_definitions();
+		$limit_settings = EDIWORMAN_Automatic_Requirements::get_limit_settings();
+		$limit_labels = array(
+			'minimum_word_count' => __( 'Minimum words', 'editorial-workflow-manager' ),
+			'maximum_word_count' => __( 'Maximum words', 'editorial-workflow-manager' ),
+			'minimum_category_count' => __( 'Minimum categories', 'editorial-workflow-manager' ),
+			'maximum_category_count' => __( 'Maximum categories', 'editorial-workflow-manager' ),
+			'minimum_tag_count' => __( 'Minimum tags', 'editorial-workflow-manager' ),
+			'maximum_tag_count' => __( 'Maximum tags', 'editorial-workflow-manager' ),
+		);
 		?>
 		<section class="ediworman-automatic-requirements" aria-labelledby="ediworman-automatic-requirements-heading">
 			<input type="hidden" name="ediworman_automatic_requirements_present" value="1" />
@@ -440,22 +487,25 @@ class EDIWORMAN_Templates_CPT {
 						<strong><?php echo esc_html( $definition['label'] ); ?></strong>
 					</label>
 
-					<?php if ( in_array( $rule_key, array( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT, EDIWORMAN_Automatic_Requirements::MAXIMUM_WORD_COUNT ), true ) ) : ?>
+					<?php if ( isset( $limit_settings[ $rule_key ] ) ) : ?>
 						<?php
-						$bound    = EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT === $rule_key ? 'minimum' : 'maximum';
+						$setting = $limit_settings[ $rule_key ];
+						$bound = $setting['bound'];
 						$bound_id = $rule_id . '-' . $bound;
+						$error_id = 'ediworman-' . $setting['group'] . '-limit-error';
 						?>
 						<label class="ediworman-automatic-requirement__setting" for="<?php echo esc_attr( $bound_id ); ?>">
-							<?php echo 'minimum' === $bound ? esc_html__( 'Minimum words', 'editorial-workflow-manager' ) : esc_html__( 'Maximum words', 'editorial-workflow-manager' ); ?>
+							<?php echo esc_html( $limit_labels[ $rule_key ] ); ?>
 							<input
 								type="number"
 								class="small-text"
 								id="<?php echo esc_attr( $bound_id ); ?>"
 								name="ediworman_automatic_requirements[<?php echo esc_attr( $rule_key ); ?>][<?php echo esc_attr( $bound ); ?>]"
 								value="<?php echo esc_attr( (string) $config[ $rule_key ][ $bound ] ); ?>"
-								data-ediworman-word-bound="<?php echo esc_attr( $bound ); ?>"
-								aria-describedby="<?php echo esc_attr( $description_id ); ?> ediworman-word-limit-error"
-								min="1"
+								data-ediworman-limit-bound="<?php echo esc_attr( $bound ); ?>"
+								data-ediworman-limit-group="<?php echo esc_attr( $setting['group'] ); ?>"
+								aria-describedby="<?php echo esc_attr( $description_id . ' ' . $error_id ); ?>"
+								min="<?php echo esc_attr( (string) $setting['min'] ); ?>"
 								max="<?php echo esc_attr( (string) EDIWORMAN_Automatic_Requirements::MAXIMUM_WORDS ); ?>"
 								step="1"
 							/>
@@ -478,7 +528,9 @@ class EDIWORMAN_Templates_CPT {
 					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
-			<p id="ediworman-word-limit-error" class="ediworman-template-item-error" role="status" aria-live="polite" aria-atomic="true"></p>
+			<?php foreach ( array( 'words', 'categories', 'tags' ) as $group ) : ?>
+				<p id="<?php echo esc_attr( 'ediworman-' . $group . '-limit-error' ); ?>" class="ediworman-template-item-error" role="status" aria-live="polite" aria-atomic="true"></p>
+			<?php endforeach; ?>
 		</section>
 		<?php
 	}
@@ -666,20 +718,25 @@ class EDIWORMAN_Templates_CPT {
 		}
 
 		$automatic_requirements = EDIWORMAN_Automatic_Requirements::sanitize_config( $raw_automatic_requirements );
-		$word_limit_error       = EDIWORMAN_Automatic_Requirements::validate_word_limits( $submitted_automatic_requirements );
 		$previous_requirements  = EDIWORMAN_Automatic_Requirements::get_template_config( $post_id );
-		foreach ( array( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT => 'minimum', EDIWORMAN_Automatic_Requirements::MAXIMUM_WORD_COUNT => 'maximum' ) as $rule_id => $bound ) {
-			if ( $word_limit_error ) {
+		$limit_errors = array();
+		foreach ( array( 'words', 'categories', 'tags' ) as $group ) {
+			$limit_errors[ $group ] = EDIWORMAN_Automatic_Requirements::validate_limit_group( $submitted_automatic_requirements, $group );
+		}
+		foreach ( EDIWORMAN_Automatic_Requirements::get_limit_settings() as $rule_id => $setting ) {
+			$bound = $setting['bound'];
+			if ( $limit_errors[ $setting['group'] ] ) {
 				$automatic_requirements[ $rule_id ] = $previous_requirements[ $rule_id ];
-			} elseif ( empty( $automatic_requirements[ $rule_id ]['enabled'] ) && EDIWORMAN_Automatic_Requirements::validate_word_limits( array( $rule_id => array( 'enabled' => true, $bound => $submitted_automatic_requirements[ $rule_id ][ $bound ] ?? null ) ) ) ) {
+			} elseif ( empty( $automatic_requirements[ $rule_id ]['enabled'] ) && ! EDIWORMAN_Automatic_Requirements::is_valid_limit( $submitted_automatic_requirements[ $rule_id ][ $bound ] ?? null, $setting['min'] ) ) {
 				$automatic_requirements[ $rule_id ][ $bound ] = $previous_requirements[ $rule_id ][ $bound ];
 			}
 		}
-		if ( $word_limit_error ) {
-			$this->word_limit_errors[ $post_id ] = $word_limit_error;
+		if ( $limit_errors['words'] ) {
+			$this->word_limit_errors[ $post_id ] = $limit_errors['words'];
 		} else {
 			unset( $this->word_limit_errors[ $post_id ] );
 		}
+		$this->taxonomy_limit_errors[ $post_id ] = array_filter( array_intersect_key( $limit_errors, array( 'categories' => true, 'tags' => true ) ) );
 		$has_automatic_rules    = false;
 		foreach ( $automatic_requirements as $automatic_requirement ) {
 			if ( ! empty( $automatic_requirement['enabled'] ) ) {

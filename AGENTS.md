@@ -215,3 +215,22 @@ D) WordPress “registration” names (strings stored/used globally)
 
 - Do NOT run submission detection / nonce checks / processing logic in global scope (file load).
 - Only process requests inside the appropriate hooked callbacks (admin page handlers, form handlers, AJAX actions, REST callbacks).
+
+## Subagent review policy
+
+Use project-specific review subagents selectively after implementation. Do not spawn every agent for every task.
+
+- **`reviewer`**: Use for non-trivial changes with meaningful correctness, security, or regression risks.
+- **`publication_integrity`**: Use when changing publication enforcement, post statuses, REST saves, scheduled posts, policy settings, or publishing hooks.
+- **`readiness_integrity`**: Use when changing checklist state, templates, automatic requirements, rule registration, Gutenberg evaluation, caching, or readiness displays.
+- **`test_auditor`**: If configured, use for significant behavioral changes where regression tests may be missing.
+
+When multiple review domains are affected, spawn the relevant agents in parallel.
+
+Review agents must not modify files. Wait for their findings, validate them independently, remove duplicates, and fix only confirmed in-scope problems.
+
+Request targeted re-review when a fix substantially changes previously reviewed behavior.
+
+Do not spawn subagents for trivial styling, copy, formatting, or documentation-only work unless behavior also changes.
+
+The parent agent remains responsible for final correctness and verification.

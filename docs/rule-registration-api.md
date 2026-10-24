@@ -15,6 +15,8 @@ Rule IDs must use lowercase `vendor/rule-name` form. Built-in IDs are reserved. 
 
 Built-in IDs include `featured_image`, `excerpt`, `minimum_word_count`, `maximum_word_count` (added in 1.4.0), `taxonomy_presence`, and `image_alt_text`. Minimum and maximum word limits are separate enabled requirements; this addition does not change API version 1 or result schema version 1.
 
+Version 1.5.0 adds four reserved built-in IDs: `minimum_category_count`, `maximum_category_count`, `minimum_tag_count`, and `maximum_tag_count`, for ten built-ins total. They store `{ enabled, minimum }` or `{ enabled, maximum }` in the existing template configuration. Each enabled, applicable limit contributes one required rule. They declare dependencies on `category` or `post_tag` and exclude unsupported taxonomies. The editor additionally receives `taxonomyRestFields`, an explicit taxonomy-to-REST-field mapping (null for non-REST taxonomies), while the existing `taxonomyRestBases` array remains unchanged. Saved PHP results are used when live selections are unavailable. API/result schema versions remain 1.
+
 ## PHP definition
 
 ```php

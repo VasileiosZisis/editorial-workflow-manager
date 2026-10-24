@@ -23,6 +23,10 @@ class EDIWORMAN_Automatic_Requirements {
 	const MINIMUM_WORD_COUNT     = 'minimum_word_count';
 	const MAXIMUM_WORD_COUNT     = 'maximum_word_count';
 	const TAXONOMY_PRESENCE      = 'taxonomy_presence';
+	const MINIMUM_CATEGORY_COUNT = 'minimum_category_count';
+	const MAXIMUM_CATEGORY_COUNT = 'maximum_category_count';
+	const MINIMUM_TAG_COUNT      = 'minimum_tag_count';
+	const MAXIMUM_TAG_COUNT      = 'maximum_tag_count';
 	const IMAGE_ALT_TEXT         = 'image_alt_text';
 
 	/**
@@ -38,6 +42,10 @@ class EDIWORMAN_Automatic_Requirements {
 			self::MINIMUM_WORD_COUNT => array( 'post_fields' => array( 'post_content' ) ),
 			self::MAXIMUM_WORD_COUNT => array( 'post_fields' => array( 'post_content' ) ),
 			self::TAXONOMY_PRESENCE  => array( 'taxonomies' => array( 'category', 'post_tag' ) ),
+			self::MINIMUM_CATEGORY_COUNT => array( 'taxonomies' => array( 'category' ) ),
+			self::MAXIMUM_CATEGORY_COUNT => array( 'taxonomies' => array( 'category' ) ),
+			self::MINIMUM_TAG_COUNT => array( 'taxonomies' => array( 'post_tag' ) ),
+			self::MAXIMUM_TAG_COUNT => array( 'taxonomies' => array( 'post_tag' ) ),
 			self::IMAGE_ALT_TEXT     => array(
 				'post_fields'    => array( 'post_content', 'featured_media' ),
 				'attachment_alt' => true,
@@ -71,6 +79,10 @@ class EDIWORMAN_Automatic_Requirements {
 			self::MINIMUM_WORD_COUNT,
 			self::MAXIMUM_WORD_COUNT,
 			self::TAXONOMY_PRESENCE,
+			self::MINIMUM_CATEGORY_COUNT,
+			self::MAXIMUM_CATEGORY_COUNT,
+			self::MINIMUM_TAG_COUNT,
+			self::MAXIMUM_TAG_COUNT,
 			self::IMAGE_ALT_TEXT,
 		);
 	}
@@ -82,6 +94,35 @@ class EDIWORMAN_Automatic_Requirements {
 	 */
 	public static function get_rule_keys() {
 		return array_keys( EDIWORMAN_Rule_Registry::get_rules() );
+	}
+
+	/**
+	 * Numeric settings shared by template validation and administration.
+	 *
+	 * @return array<string,array{group:string,bound:string,default:int,min:int}>
+	 */
+	public static function get_limit_settings() {
+		return array(
+			self::MINIMUM_WORD_COUNT => array( 'group' => 'words', 'bound' => 'minimum', 'default' => self::DEFAULT_MINIMUM_WORDS, 'min' => 1 ),
+			self::MAXIMUM_WORD_COUNT => array( 'group' => 'words', 'bound' => 'maximum', 'default' => self::DEFAULT_MAXIMUM_WORDS, 'min' => 1 ),
+			self::MINIMUM_CATEGORY_COUNT => array( 'group' => 'categories', 'bound' => 'minimum', 'default' => 1, 'min' => 1 ),
+			self::MAXIMUM_CATEGORY_COUNT => array( 'group' => 'categories', 'bound' => 'maximum', 'default' => 5, 'min' => 0 ),
+			self::MINIMUM_TAG_COUNT => array( 'group' => 'tags', 'bound' => 'minimum', 'default' => 1, 'min' => 1 ),
+			self::MAXIMUM_TAG_COUNT => array( 'group' => 'tags', 'bound' => 'maximum', 'default' => 5, 'min' => 0 ),
+		);
+	}
+
+	/**
+	 * Return the core taxonomy for a count rule, or an empty string.
+	 *
+	 * @param string $rule_id Rule ID.
+	 * @return string
+	 */
+	public static function get_count_rule_taxonomy( $rule_id ) {
+		if ( in_array( $rule_id, array( self::MINIMUM_CATEGORY_COUNT, self::MAXIMUM_CATEGORY_COUNT ), true ) ) {
+			return 'category';
+		}
+		return in_array( $rule_id, array( self::MINIMUM_TAG_COUNT, self::MAXIMUM_TAG_COUNT ), true ) ? 'post_tag' : '';
 	}
 
 	/**
@@ -134,6 +175,12 @@ class EDIWORMAN_Automatic_Requirements {
 					: self::DEFAULT_MAXIMUM_WORDS;
 				$config[ $rule_key ]['maximum'] = min( self::MAXIMUM_WORDS, max( 1, $maximum ) );
 			}
+			if ( self::get_count_rule_taxonomy( $rule_key ) ) {
+				$setting = self::get_limit_settings()[ $rule_key ];
+				$bound = $setting['bound'];
+				$value = $raw_rule[ $bound ] ?? $setting['default'];
+				$config[ $rule_key ][ $bound ] = self::is_valid_limit( $value, $setting['min'] ) ? (int) $value : $setting['default'];
+			}
 		}
 
 		// Keep unavailable custom registrations so their enablement returns when
@@ -159,19 +206,48 @@ class EDIWORMAN_Automatic_Requirements {
 	 * @return string Empty on success, otherwise an allow-listed error code.
 	 */
 	public static function validate_word_limits( $raw_config ) {
+		return self::validate_limit_group( $raw_config, 'words' );
+	}
+
+	/**
+	 * Strictly validate one related pair without altering other rule settings.
+	 *
+	 * @param array  $raw_config Unslashed configuration.
+	 * @param string $group      Words, categories, or tags.
+	 * @return string Empty on success; otherwise invalid or range.
+	 */
+	public static function validate_limit_group( $raw_config, $group ) {
 		$bounds = array();
-		foreach ( array( self::MINIMUM_WORD_COUNT => 'minimum', self::MAXIMUM_WORD_COUNT => 'maximum' ) as $rule_id => $field ) {
+		foreach ( self::get_limit_settings() as $rule_id => $setting ) {
+			if ( $group !== $setting['group'] ) {
+				continue;
+			}
+			$field = $setting['bound'];
 			$rule = isset( $raw_config[ $rule_id ] ) && is_array( $raw_config[ $rule_id ] ) ? $raw_config[ $rule_id ] : array();
-			if ( ! self::normalize_enabled( $rule['enabled'] ?? false ) ) {
+			// Match stored checkbox normalization, but validate thresholds unmodified.
+			$enabled = $rule['enabled'] ?? false;
+			$enabled = is_scalar( $enabled ) ? sanitize_text_field( (string) $enabled ) : $enabled;
+			if ( ! self::normalize_enabled( $enabled ) ) {
 				continue;
 			}
 			$value = $rule[ $field ] ?? null;
-			if ( ( ! is_int( $value ) && ! is_string( $value ) ) || ! preg_match( '/^[0-9]+$/D', (string) $value ) || (float) $value < 1 || (float) $value > self::MAXIMUM_WORDS ) {
+			if ( ! self::is_valid_limit( $value, $setting['min'] ) ) {
 				return 'invalid';
 			}
 			$bounds[ $field ] = (int) $value;
 		}
 		return isset( $bounds['minimum'], $bounds['maximum'] ) && $bounds['minimum'] > $bounds['maximum'] ? 'range' : '';
+	}
+
+	/**
+	 * Check a submitted whole-number threshold without coercing malformed input.
+	 *
+	 * @param mixed $value Value to validate.
+	 * @param int   $floor Smallest allowed value.
+	 * @return bool
+	 */
+	public static function is_valid_limit( $value, $floor ) {
+		return ( is_int( $value ) || is_string( $value ) ) && preg_match( '/^[0-9]+$/D', (string) $value ) && (float) $value >= $floor && (float) $value <= self::MAXIMUM_WORDS;
 	}
 
 	/**
@@ -210,6 +286,22 @@ class EDIWORMAN_Automatic_Requirements {
 				'label'       => __( 'Category or tag present', 'editorial-workflow-manager' ),
 				'description' => __( 'Passes when at least one category or tag is assigned. Ignored when neither taxonomy is available.', 'editorial-workflow-manager' ),
 			),
+			self::MINIMUM_CATEGORY_COUNT => array(
+				'label' => __( 'Minimum categories', 'editorial-workflow-manager' ),
+				'description' => __( 'Counts directly assigned categories, including the default category WordPress may assign when saving. Unassigned ancestors do not count. Ignored when categories are unsupported.', 'editorial-workflow-manager' ),
+			),
+			self::MAXIMUM_CATEGORY_COUNT => array(
+				'label' => __( 'Maximum categories', 'editorial-workflow-manager' ),
+				'description' => __( 'Limits directly assigned categories. Zero requires no categories, but WordPress may assign a default category when saving. Ignored when categories are unsupported.', 'editorial-workflow-manager' ),
+			),
+			self::MINIMUM_TAG_COUNT => array(
+				'label' => __( 'Minimum tags', 'editorial-workflow-manager' ),
+				'description' => __( 'Counts distinct tags assigned to the post. Ignored when tags are unsupported.', 'editorial-workflow-manager' ),
+			),
+			self::MAXIMUM_TAG_COUNT => array(
+				'label' => __( 'Maximum tags', 'editorial-workflow-manager' ),
+				'description' => __( 'Limits distinct tags assigned to the post. Zero requires no tags. Ignored when tags are unsupported.', 'editorial-workflow-manager' ),
+			),
 			self::IMAGE_ALT_TEXT     => array(
 				'label'       => __( 'Image alternative-text coverage', 'editorial-workflow-manager' ),
 				'description' => __( 'Passes when the featured image and content images have non-empty alternative text.', 'editorial-workflow-manager' ),
@@ -240,7 +332,7 @@ class EDIWORMAN_Automatic_Requirements {
 	 *
 	 * @param int    $template_id Checklist template ID.
 	 * @param string $post_type   Content post type.
-	 * @return array{rules:array<int,array>,taxonomyRestBases:array<int,string>,editorScripts:array<int,string>}
+	 * @return array{rules:array<int,array>,taxonomyRestBases:array<int,string>,taxonomyRestFields:array<string,string|null>,editorScripts:array<int,string>}
 	 */
 	public static function get_editor_data( $template_id, $post_type ) {
 		$post_type  = sanitize_key( $post_type );
@@ -248,6 +340,11 @@ class EDIWORMAN_Automatic_Requirements {
 		$rules      = array();
 		$editor_scripts = array();
 		$taxonomies = self::get_supported_taxonomies( $post_type );
+		$taxonomy_rest_fields = array();
+		foreach ( $taxonomies as $taxonomy ) {
+			$object = get_taxonomy( $taxonomy );
+			$taxonomy_rest_fields[ $taxonomy ] = $object && $object->show_in_rest ? ( $object->rest_base ? $object->rest_base : $object->name ) : null;
+		}
 
 		foreach ( self::get_rule_keys() as $rule_key ) {
 			if ( empty( $config[ $rule_key ]['enabled'] ) || ! self::is_rule_applicable( $rule_key, $post_type, $taxonomies ) ) {
@@ -274,6 +371,13 @@ class EDIWORMAN_Automatic_Requirements {
 			if ( self::MAXIMUM_WORD_COUNT === $rule_key ) {
 				$rule['maximum'] = (int) $config[ $rule_key ]['maximum'];
 			}
+			$taxonomy = self::get_count_rule_taxonomy( $rule_key );
+			if ( $taxonomy ) {
+				$setting = self::get_limit_settings()[ $rule_key ];
+				$rule[ $setting['bound'] ] = (int) $config[ $rule_key ][ $setting['bound'] ];
+				$rule['taxonomy'] = $taxonomy;
+				$rule['hasClientEvaluator'] = ! empty( $taxonomy_rest_fields[ $taxonomy ] );
+			}
 
 			$rules[] = $rule;
 			if ( ! empty( $definition['editor_script'] ) ) {
@@ -294,6 +398,7 @@ class EDIWORMAN_Automatic_Requirements {
 		return array(
 			'rules'             => $rules,
 			'taxonomyRestBases' => array_values( array_unique( array_map( 'sanitize_key', $rest_bases ) ) ),
+			'taxonomyRestFields' => $taxonomy_rest_fields,
 			'editorScripts'     => array_values( array_unique( $editor_scripts ) ),
 		);
 	}
@@ -360,6 +465,21 @@ class EDIWORMAN_Automatic_Requirements {
 
 		$passed  = false;
 		$message = '';
+		$taxonomy = self::get_count_rule_taxonomy( $rule_key );
+		if ( $taxonomy ) {
+			$term_ids = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'ids' ) );
+			if ( is_wp_error( $term_ids ) ) {
+				return array( 'status' => EDIWORMAN_Rule_Registry::STATUS_FAIL, 'message' => __( 'Assigned terms could not be checked. Save again or contact a site administrator.', 'editorial-workflow-manager' ) );
+			}
+			$count = count( array_unique( array_map( 'absint', $term_ids ) ) );
+			$setting = self::get_limit_settings()[ $rule_key ];
+			$limit = (int) ( $config[ $setting['bound'] ] ?? $setting['default'] );
+			$passed = 'minimum' === $setting['bound'] ? $count >= $limit : $count <= $limit;
+			return array(
+				'status' => $passed ? EDIWORMAN_Rule_Registry::STATUS_PASS : EDIWORMAN_Rule_Registry::STATUS_FAIL,
+				'message' => self::get_taxonomy_count_message( $rule_key, $count, $limit, $passed ),
+			);
+		}
 
 		switch ( $rule_key ) {
 			case self::FEATURED_IMAGE:
@@ -437,6 +557,21 @@ class EDIWORMAN_Automatic_Requirements {
 	 * @return string
 	 */
 	private static function get_readiness_label( $rule_key, $config ) {
+		if ( self::get_count_rule_taxonomy( $rule_key ) ) {
+			$setting = self::get_limit_settings()[ $rule_key ];
+			$limit = (int) $config[ $setting['bound'] ];
+			$labels = array(
+				/* translators: %d: minimum category count. */
+				self::MINIMUM_CATEGORY_COUNT => _n( 'At least %d category', 'At least %d categories', $limit, 'editorial-workflow-manager' ),
+				/* translators: %d: maximum category count. */
+				self::MAXIMUM_CATEGORY_COUNT => _n( 'At most %d category', 'At most %d categories', $limit, 'editorial-workflow-manager' ),
+				/* translators: %d: minimum tag count. */
+				self::MINIMUM_TAG_COUNT => _n( 'At least %d tag', 'At least %d tags', $limit, 'editorial-workflow-manager' ),
+				/* translators: %d: maximum tag count. */
+				self::MAXIMUM_TAG_COUNT => _n( 'At most %d tag', 'At most %d tags', $limit, 'editorial-workflow-manager' ),
+			);
+			return sprintf( $labels[ $rule_key ], $limit );
+		}
 		if ( self::MAXIMUM_WORD_COUNT === $rule_key ) {
 			return sprintf(
 				/* translators: %d: allowed maximum word count. */
@@ -465,6 +600,35 @@ class EDIWORMAN_Automatic_Requirements {
 
 		$rule = EDIWORMAN_Rule_Registry::get_rule( $rule_key );
 		return $rule ? $rule['label'] : '';
+	}
+
+	/**
+	 * Explain a taxonomy count and the action needed when it fails.
+	 *
+	 * @param string $rule_key Rule ID.
+	 * @param int    $count    Assigned term count.
+	 * @param int    $limit    Configured limit.
+	 * @param bool   $passed   Whether the limit is satisfied.
+	 * @return string
+	 */
+	private static function get_taxonomy_count_message( $rule_key, $count, $limit, $passed ) {
+		$messages = array(
+			/* translators: 1: actual category count, 2: minimum category count. */
+			self::MINIMUM_CATEGORY_COUNT => _n( '%1$d category; minimum %2$d.', '%1$d categories; minimum %2$d.', $count, 'editorial-workflow-manager' ),
+			/* translators: 1: actual category count, 2: maximum category count. */
+			self::MAXIMUM_CATEGORY_COUNT => _n( '%1$d category; maximum %2$d.', '%1$d categories; maximum %2$d.', $count, 'editorial-workflow-manager' ),
+			/* translators: 1: actual tag count, 2: minimum tag count. */
+			self::MINIMUM_TAG_COUNT => _n( '%1$d tag; minimum %2$d.', '%1$d tags; minimum %2$d.', $count, 'editorial-workflow-manager' ),
+			/* translators: 1: actual tag count, 2: maximum tag count. */
+			self::MAXIMUM_TAG_COUNT => _n( '%1$d tag; maximum %2$d.', '%1$d tags; maximum %2$d.', $count, 'editorial-workflow-manager' ),
+		);
+		$guidance = array(
+			self::MINIMUM_CATEGORY_COUNT => __( 'Assign more categories to meet the minimum.', 'editorial-workflow-manager' ),
+			self::MAXIMUM_CATEGORY_COUNT => __( 'Remove categories to meet the maximum.', 'editorial-workflow-manager' ),
+			self::MINIMUM_TAG_COUNT => __( 'Assign more tags to meet the minimum.', 'editorial-workflow-manager' ),
+			self::MAXIMUM_TAG_COUNT => __( 'Remove tags to meet the maximum.', 'editorial-workflow-manager' ),
+		);
+		return sprintf( $messages[ $rule_key ], $count, $limit ) . ( $passed ? '' : ' ' . $guidance[ $rule_key ] );
 	}
 
 	/**
@@ -502,6 +666,10 @@ class EDIWORMAN_Automatic_Requirements {
 
 		if ( ! empty( $rule['post_types'] ) && ! in_array( $post_type, $rule['post_types'], true ) ) {
 			return false;
+		}
+		$taxonomy = self::get_count_rule_taxonomy( $rule_key );
+		if ( $taxonomy ) {
+			return in_array( $taxonomy, $taxonomies, true );
 		}
 
 		switch ( $rule_key ) {

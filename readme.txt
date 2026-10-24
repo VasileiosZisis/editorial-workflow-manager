@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,6 +50,8 @@ Built-in automatic checks include:
 * Configurable minimum word count.
 * Independently configurable maximum word count.
 * Category or tag present.
+* Independently configurable minimum and maximum category counts.
+* Independently configurable minimum and maximum tag counts.
 * Image alternative-text coverage for featured and content images.
 
 Automatic requirements update from the current post content and participate in the same Ready / Incomplete status as manual required items.
@@ -165,6 +167,8 @@ Developer documentation is included in `docs/rule-registration-api.md`, together
 * Minimum word-count checking.
 * Maximum word-count checking.
 * Category or tag checking.
+* Minimum and maximum category-count checking.
+* Minimum and maximum tag-count checking.
 * Image alternative-text checking.
 * Helper text and reference links.
 * Template duplication.
@@ -245,7 +249,11 @@ Editorial Workflow Manager adds an editorial checklist directly to the WordPress
 
 Yes.
 
-Checklist templates can include automatic requirements for featured images, excerpts, minimum word count, maximum word count, category or tag presence, and image alternative-text coverage.
+Checklist templates can include ten automatic requirements: featured image, excerpt, minimum/maximum words, category or tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
+
+Category and tag count limits have four independent enable toggles and each counts as one required rule. They are disabled by default, with initial minimums of 1 and maximums of 5. Minimums accept whole numbers from 1 to 100,000; maximums accept 0 to 100,000. Enabled minimum cannot exceed enabled maximum for the same taxonomy, and equality is valid. Invalid submissions preserve that taxonomy's previous pair while other valid edits save.
+
+Counts include distinct, directly assigned terms, not unassigned ancestors or descendants. WordPress's assigned default category counts, including when WordPress assigns it during saving; a zero-category maximum may therefore prevent publication. Unsupported taxonomies are excluded. The live checklist reflects current selections when available, otherwise it shows saved PHP results with save-to-refresh guidance. PHP validates final saved assignments. The existing Category or tag present rule remains unchanged.
 
 Minimum and maximum words have separate enable toggles and each counts as one required rule. Maximum is disabled by default and initially offers a 1,000-word limit. Enabled limits must be whole numbers from 1 to 100,000, and minimum cannot exceed maximum when both are enabled. Invalid submissions preserve the previous word-limit pair while other valid checklist edits are saved. Empty content passes a maximum-only requirement.
 
@@ -353,6 +361,14 @@ A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
 
+= 1.5.0 =
+
+* Added independently enabled minimum/maximum category and tag requirements with inclusive thresholds and maximum-zero support.
+* Added accessible range validation that preserves the affected taxonomy's previous limits while saving unrelated valid changes.
+* Integrated taxonomy counts with live/saved editor results, readiness surfaces, and authoritative publication checks.
+* Refreshed readiness after term relationship removals as well as assignments.
+* Updated the dismissible settings-only announcement with category/tag-limit setup guidance.
+
 = 1.4.0 =
 
 * Added an independently enabled maximum word-count requirement, including live editor feedback and authoritative publication validation.
@@ -397,6 +413,10 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 == Upgrade Notice ==
+
+= 1.5.0 =
+
+Adds optional minimum/maximum category and tag limits. Existing and starter templates keep all four disabled until configured. The existing category-or-tag presence rule remains unchanged; assigned default categories count toward limits.
 
 = 1.4.0 =
 

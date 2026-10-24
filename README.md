@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.4.0**
+Current release: **1.5.0**
 
 ## Free Version Features
 
@@ -15,7 +15,7 @@ Current release: **1.4.0**
 - Editor assets and checklist state are scoped to avoid unnecessary admin work.
 - Duplicate action for quickly cloning checklist templates.
 - Required and optional checklist items.
-- Six configurable automatic requirements: featured image, excerpt, minimum word count, maximum word count, category/tag presence, and image alternative-text coverage.
+- Ten configurable automatic requirements: featured image, excerpt, minimum/maximum words, category/tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
 - Public PHP and JavaScript registration API for code-defined automatic requirements.
 - Opt-in Advisory / Block publication policy per post type, with authoritative server checks and scheduled-publication revalidation.
 - Live automatic-result status in the block-editor sidebar.
@@ -63,6 +63,7 @@ Product scope defines feature placement, while the roadmaps distinguish complete
 - Legacy template items: `_ediworman_items` (`array<string>` labels).
 - V2 template items: `_ediworman_items_v2` (`array<{id,label,description,url,required}>`) where `id` is UUID.
 - Automatic template requirements: `_ediworman_automatic_requirements` (built-in rule configuration, including `minimum_word_count: { enabled, minimum }` and `maximum_word_count: { enabled, maximum }`).
+- Category/tag limits share that metadata: `minimum_category_count` and `minimum_tag_count` use `{ enabled, minimum }`; `maximum_category_count` and `maximum_tag_count` use `{ enabled, maximum }`.
 - Registered custom-rule enablement shares `_ediworman_automatic_requirements`; unavailable namespaced registrations are preserved for provider reactivation.
 - Legacy checked state: `_ediworman_checked_items` (`array<string>` labels).
 - V2 checked state: `_ediworman_checked_item_ids` (`array<string>` UUIDs).
@@ -70,12 +71,14 @@ Product scope defines feature placement, while the roadmaps distinguish complete
 - Review prompt user state: up to five completed post IDs, a snooze timestamp, and a closed status.
 - Publication modes: `publication_modes` inside `ediworman_settings`, keyed by post type (`advisory` or `block`).
 - Latest blocked attempt: `_ediworman_publication_blocked` stores a reason, scheduled-hold flag, and timestamp; current explanations are recomputed.
-- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.4.0`, independently per administrator and site. This maximum-word-count announcement replaces the 1.3.0 publication-policy announcement and appears even if that earlier announcement was dismissed. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
+- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.5.0`, independently per administrator and site. This category/tag-limits announcement replaces the earlier announcement and appears even if that earlier announcement was dismissed. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
 
 Legacy templates remain supported. When a legacy template is edited/saved in the row editor, it is upgraded to v2 and the legacy mirror meta remains written for compatibility.
 
 ## Scope Notes
 
+- Category and tag minimum/maximum counts are four separate requirements, disabled by default on existing and starter templates. Initial minimums are 1 and maximums are 5. Minimums accept whole numbers from 1 to 100,000; maximums accept 0 to 100,000. Both bounds are inclusive, and enabled minimum cannot exceed enabled maximum for the same taxonomy. Invalid submissions preserve that taxonomy's previous pair while unrelated valid changes save.
+- Counts include distinct, directly assigned terms, not unassigned ancestors or descendants. WordPress's assigned default category counts; a maximum of zero can therefore conflict with its default-category behavior. Unsupported taxonomies are excluded. Gutenberg shows current selections where available; otherwise it shows saved PHP results with save-to-refresh guidance. PHP evaluates final saved assignments. The existing category-or-tag presence rule is unchanged and remains independent.
 - Minimum and maximum word counts are independent required rules when enabled. Maximum defaults to 1,000 words but stays disabled on existing and starter templates. Enabled limits accept whole numbers from 1 to 100,000; both may be equal, but minimum cannot exceed maximum. Invalid submissions retain the previous word-limit pair while other valid checklist edits save.
 - Word limits use saved post content, excluding shortcode tags, HTML tags/comments, and script/style contents, then decode HTML 4 entities and count Unicode letter/number sequences with internal apostrophes or hyphens. Adjacent HTML elements do not insert spaces; results can differ from the editor's native word-count display. The live checklist mirrors PHP counting, and saved PHP evaluation remains authoritative. Empty content passes a maximum-only check.
 

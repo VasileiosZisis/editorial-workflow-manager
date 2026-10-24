@@ -95,13 +95,14 @@
     }, 0);
   };
 
-  const wordInputs = Array.from(form.querySelectorAll('[data-ediworman-word-bound]'));
-  const wordError = document.getElementById('ediworman-word-limit-error');
-  const validateWordLimits = () => {
-    let invalid = null;
-    let error = '';
-    const bounds = {};
-    wordInputs.forEach((input) => {
+  const limitInputs = Array.from(form.querySelectorAll('[data-ediworman-limit-bound]'));
+  const validateLimits = () => {
+    let firstInvalid = null;
+    const groups = {};
+    limitInputs.forEach((input) => {
+      const group = input.dataset.ediwormanLimitGroup;
+      groups[group] = groups[group] || { bounds: {}, invalid: null, error: '' };
+      const result = groups[group];
       const enabled = input.closest('.ediworman-automatic-requirement')
         .querySelector('input[type="checkbox"]').checked;
       input.required = enabled;
@@ -111,34 +112,44 @@
       if (!enabled) {
         return;
       }
-      if (!/^[0-9]+$/.test(input.value) || Number(input.value) < 1 || Number(input.value) > 100000) {
-        if (!invalid) {
-          invalid = input;
-          error = getMessage('wordLimitInvalid', 'Enter a whole number between 1 and 100,000 for each enabled word limit.');
+      if (!/^[0-9]+$/.test(input.value) || Number(input.value) < Number(input.min) || Number(input.value) > 100000) {
+        if (!result.invalid) {
+          result.invalid = input;
+          result.error = group === 'words'
+            ? getMessage('wordLimitInvalid', 'Enter a whole number between 1 and 100,000 for each enabled word limit.')
+            : getMessage('taxonomyLimitInvalid', 'Enter a whole number from 1 to 100,000 for a minimum, or 0 to 100,000 for a maximum.');
         }
       } else {
-        bounds[input.dataset.ediwormanWordBound] = Number(input.value);
+        result.bounds[input.dataset.ediwormanLimitBound] = Number(input.value);
       }
     });
-    if (!invalid && bounds.minimum !== undefined && bounds.maximum !== undefined && bounds.minimum > bounds.maximum) {
-      invalid = wordInputs.find((input) => input.dataset.ediwormanWordBound === 'maximum');
-      error = getMessage('wordLimitRange', 'Maximum words must be greater than or equal to minimum words when both are enabled.');
-    }
-    if (invalid) {
-      invalid.setCustomValidity(error);
-      invalid.setAttribute('aria-invalid', 'true');
-    }
-    if (wordError) {
-      wordError.textContent = error;
-    }
-    return invalid;
+    Object.entries(groups).forEach(([group, result]) => {
+      const { bounds } = result;
+      if (!result.invalid && bounds.minimum !== undefined && bounds.maximum !== undefined && bounds.minimum > bounds.maximum) {
+        result.invalid = limitInputs.find((input) => input.dataset.ediwormanLimitGroup === group && input.dataset.ediwormanLimitBound === 'maximum');
+        const rangeMessages = {
+          words: getMessage('wordLimitRange', 'Maximum words must be greater than or equal to minimum words when both are enabled.'),
+          categories: getMessage('categoryLimitRange', 'Maximum categories must be greater than or equal to minimum categories when both are enabled.'),
+          tags: getMessage('tagLimitRange', 'Maximum tags must be greater than or equal to minimum tags when both are enabled.'),
+        };
+        result.error = rangeMessages[group];
+      }
+      if (result.invalid) {
+        result.invalid.setCustomValidity(result.error);
+        result.invalid.setAttribute('aria-invalid', 'true');
+        firstInvalid = firstInvalid || result.invalid;
+      }
+      const region = document.getElementById(`ediworman-${group}-limit-error`);
+      if (region) region.textContent = result.error;
+    });
+    return firstInvalid;
   };
 
-  form.addEventListener('input', validateWordLimits);
-  form.addEventListener('change', validateWordLimits);
+  form.addEventListener('input', validateLimits);
+  form.addEventListener('change', validateLimits);
   form.addEventListener('invalid', (event) => {
-    const invalid = validateWordLimits();
-    if (invalid && wordInputs.includes(event.target)) {
+    const invalid = validateLimits();
+    if (invalid && limitInputs.includes(event.target)) {
       invalid.focus();
     }
   }, true);
@@ -376,7 +387,7 @@
 
   form.addEventListener('submit', (event) => {
     const rows = getRows();
-    let firstInvalidInput = validateWordLimits();
+    let firstInvalidInput = validateLimits();
     const hasEnabledAutomaticRequirement = Array.from(
       form.querySelectorAll(
         '.ediworman-automatic-requirement input[type="checkbox"]',
@@ -418,10 +429,10 @@
     if (firstInvalidInput) {
       event.preventDefault();
       firstInvalidInput.focus();
-      announce(wordInputs.includes(firstInvalidInput) ? wordError.textContent : messages.validation);
+      announce(limitInputs.includes(firstInvalidInput) ? firstInvalidInput.validationMessage : messages.validation);
     }
   });
 
   refreshRows();
-  validateWordLimits();
+  validateLimits();
 })();

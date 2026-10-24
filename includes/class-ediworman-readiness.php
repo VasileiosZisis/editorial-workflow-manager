@@ -37,6 +37,7 @@ class EDIWORMAN_Readiness {
 		add_action( 'updated_post_meta', array( __CLASS__, 'handle_checklist_meta_change' ), 10, 4 );
 		add_action( 'deleted_post_meta', array( __CLASS__, 'handle_checklist_meta_change' ), 10, 4 );
 		add_action( 'set_object_terms', array( __CLASS__, 'handle_object_terms_change' ), 10, 6 );
+		add_action( 'deleted_term_relationships', array( __CLASS__, 'handle_term_relationships_removed' ), 10, 3 );
 		add_action( 'delete_attachment', array( __CLASS__, 'handle_attachment_delete' ) );
 		add_action( 'updated_option', array( __CLASS__, 'handle_settings_option_updated' ), 10, 3 );
 		add_action( 'added_option', array( __CLASS__, 'handle_settings_option_added' ), 10, 2 );
@@ -172,6 +173,22 @@ class EDIWORMAN_Readiness {
 		}
 
 		self::refresh_cache_for_post( $object_id );
+	}
+
+	/**
+	 * Refresh after direct relationship removals as well as term assignments.
+	 *
+	 * @param int    $object_id Post ID.
+	 * @param array  $tt_ids    Removed term taxonomy IDs.
+	 * @param string $taxonomy Taxonomy slug.
+	 * @return void
+	 */
+	public static function handle_term_relationships_removed( $object_id, $tt_ids, $taxonomy ) {
+		if ( EDIWORMAN_Rule_Registry::depends_on_taxonomy( $taxonomy ) ) {
+			// Core fires this action before cleaning term caches on removal paths.
+			clean_object_term_cache( $object_id, get_post_type( $object_id ) );
+		}
+		self::handle_object_terms_change( $object_id, array(), $tt_ids, $taxonomy, false, array() );
 	}
 
 	/**

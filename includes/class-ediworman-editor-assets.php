@@ -64,6 +64,7 @@ class EDIWORMAN_Editor_Assets {
 		$automatic_data = array(
 			'rules'             => array(),
 			'taxonomyRestBases' => array(),
+			'taxonomyRestFields' => array(),
 			'editorScripts'     => array(),
 		);
 		$template_data = EDIWORMAN_Readiness::get_template_data_for_post_type( $post_type );
@@ -130,6 +131,7 @@ class EDIWORMAN_Editor_Assets {
 				'automaticRequirements' => $automatic_data['rules'],
 				'wordCountEntities'     => array_intersect( array_column( $automatic_data['rules'], 'key' ), array( EDIWORMAN_Automatic_Requirements::MINIMUM_WORD_COUNT, EDIWORMAN_Automatic_Requirements::MAXIMUM_WORD_COUNT ) ) ? EDIWORMAN_Automatic_Requirements::get_word_count_entities() : array(),
 				'taxonomyRestBases'     => $automatic_data['taxonomyRestBases'],
+				'taxonomyRestFields'    => $automatic_data['taxonomyRestFields'],
 				'savedAutomaticResults' => $saved_results,
 				'ruleResultSchemaVersion' => EDIWORMAN_Rule_Registry::RESULT_SCHEMA_VERSION,
 				'ruleResultsRestPath'   => $post_id > 0 ? '/editorial-workflow-manager/v1/posts/' . $post_id . '/rules' : '',

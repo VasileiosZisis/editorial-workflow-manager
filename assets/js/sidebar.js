@@ -9,7 +9,7 @@
   const { PanelBody, CheckboxControl, Notice, Button } = wp.components;
   const { Fragment, createElement: el, useEffect, useMemo, useState } = wp.element;
   const { useSelect, useDispatch } = wp.data;
-  const { __, sprintf } = wp.i18n;
+  const { __, _n, sprintf } = wp.i18n;
   const { parse: parseBlocks } = wp.blocks;
   const apiFetch = wp.apiFetch;
 
@@ -26,6 +26,10 @@
       'minimum_word_count',
       'maximum_word_count',
       'taxonomy_presence',
+      'minimum_category_count',
+      'maximum_category_count',
+      'minimum_tag_count',
+      'maximum_tag_count',
       'image_alt_text',
     ]);
 
@@ -98,6 +102,13 @@
               const maximum = parseInt(rule.maximum, 10);
               normalizedRule.maximum = !Number.isNaN(maximum) && maximum > 0 ? maximum : 1000;
             }
+            if (/^(minimum|maximum)_(category|tag)_count$/.test(rule.key)) {
+              normalizedRule.taxonomy = rule.taxonomy === 'category' ? 'category' : 'post_tag';
+              const bound = rule.key.startsWith('minimum_') ? 'minimum' : 'maximum';
+              const value = Number(rule[bound]);
+              normalizedRule[bound] = Number.isInteger(value) && value >= (bound === 'minimum' ? 1 : 0) && value <= 100000
+                ? value : (bound === 'minimum' ? 1 : 5);
+            }
 
             return normalizedRule;
           })
@@ -138,6 +149,10 @@
       },
       automaticRequirements,
       taxonomyRestBases,
+      taxonomyRestFields: rawData.taxonomyRestFields && typeof rawData.taxonomyRestFields === 'object'
+        ? Object.fromEntries(Object.entries(rawData.taxonomyRestFields).filter(([taxonomy, field]) =>
+          ['category', 'post_tag'].includes(taxonomy) && (field === null || (typeof field === 'string' && field.length > 0))))
+        : {},
 	  savedAutomaticResults,
 	  ruleResultsRestPath:
 	    typeof rawData.ruleResultsRestPath === 'string'
@@ -297,6 +312,14 @@
     const { automaticRequirements } = checklistData;
     const wordCount = automaticRuleKeys.has('minimum_word_count') || automaticRuleKeys.has('maximum_word_count')
       ? countWords(state.content) : 0;
+    const taxonomyCounts = {};
+    automaticRequirements.forEach((rule) => {
+      if (!rule.taxonomy || Object.prototype.hasOwnProperty.call(taxonomyCounts, rule.taxonomy)) return;
+      const field = checklistData.taxonomyRestFields[rule.taxonomy];
+      const terms = field ? state.taxonomyTerms[field] : null;
+      taxonomyCounts[rule.taxonomy] = Array.isArray(terms)
+        ? new Set(terms.map(Number).filter((id) => Number.isInteger(id) && id > 0)).size : null;
+    });
 	const savedResultsByKey = new Map(
 	  savedResults.map((result) => [result.key, result]),
 	);
@@ -321,7 +344,36 @@
 	  let status = 'fail';
 	  let serverOnly = false;
 
-      switch (rule.key) {
+      if (rule.taxonomy) {
+        const count = taxonomyCounts[rule.taxonomy];
+        if (count === null || !rule.hasClientEvaluator) {
+          const savedResult = savedResultsByKey.get(rule.key);
+          serverOnly = true;
+          passed = savedResult?.status === 'pass';
+          message = savedResult?.message || __('This requirement could not be evaluated. Contact a site administrator.', 'editorial-workflow-manager');
+        } else {
+          const minimum = rule.key.startsWith('minimum_');
+          const limit = minimum ? rule.minimum : rule.maximum;
+          passed = minimum ? count >= limit : count <= limit;
+          const messages = {
+            /* translators: 1: actual category count, 2: minimum category count. */
+            minimum_category_count: _n('%1$d category; minimum %2$d.', '%1$d categories; minimum %2$d.', count, 'editorial-workflow-manager'),
+            /* translators: 1: actual category count, 2: maximum category count. */
+            maximum_category_count: _n('%1$d category; maximum %2$d.', '%1$d categories; maximum %2$d.', count, 'editorial-workflow-manager'),
+            /* translators: 1: actual tag count, 2: minimum tag count. */
+            minimum_tag_count: _n('%1$d tag; minimum %2$d.', '%1$d tags; minimum %2$d.', count, 'editorial-workflow-manager'),
+            /* translators: 1: actual tag count, 2: maximum tag count. */
+            maximum_tag_count: _n('%1$d tag; maximum %2$d.', '%1$d tags; maximum %2$d.', count, 'editorial-workflow-manager'),
+          };
+          const guidance = {
+            minimum_category_count: __('Assign more categories to meet the minimum.', 'editorial-workflow-manager'),
+            maximum_category_count: __('Remove categories to meet the maximum.', 'editorial-workflow-manager'),
+            minimum_tag_count: __('Assign more tags to meet the minimum.', 'editorial-workflow-manager'),
+            maximum_tag_count: __('Remove tags to meet the maximum.', 'editorial-workflow-manager'),
+          };
+          message = sprintf(messages[rule.key], count, limit) + (passed ? '' : ` ${guidance[rule.key]}`);
+        }
+      } else switch (rule.key) {
         case 'featured_image':
           passed = state.featuredMediaId > 0;
           message = passed
@@ -543,6 +595,14 @@
         checklistData.taxonomyRestBases.forEach((restBase) => {
           const terms = editor.getEditedPostAttribute(restBase);
           taxonomyTerms[restBase] = Array.isArray(terms) ? terms : [];
+        });
+      }
+      if (checklistData.automaticRequirements.some((rule) => rule.taxonomy)) {
+        Object.values(checklistData.taxonomyRestFields).forEach((restField) => {
+          if (!restField) return;
+          const terms = editor.getEditedPostAttribute(restField);
+          // Undefined means the field is unavailable, not an empty selection.
+          taxonomyTerms[restField] = Array.isArray(terms) ? terms : null;
         });
       }
 
