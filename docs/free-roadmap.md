@@ -2,7 +2,7 @@
 
 This document tracks implementation status and delivery order for the Free plugin. [Product scope](product-scope.md) owns feature placement; technical behavior is documented in the [rule-registration API](rule-registration-api.md) and [publication policy](publication-policy.md).
 
-The current implemented baseline is **1.5.0**. Word-count and taxonomy count limits are implemented; internal-link count and JSON portability remain planned. No future release numbers, dates, or effort estimates are assigned here.
+The current implemented baseline is **1.6.0**. Word-count, taxonomy count limits, and minimum internal links are implemented; JSON portability remains planned. No future release numbers, dates, or effort estimates are assigned here.
 
 ## Completed milestones
 
@@ -15,6 +15,7 @@ The current implemented baseline is **1.5.0**. Word-count and taxonomy count lim
 | 1.3.0: Optional publication blocking | Advisory / Block per post type; uncached validation on supported publication/scheduling paths; due scheduled-post revalidation; saved-work preservation and recovery messages; published/private updates remain editable; settings-only announcement with per-administrator/site dismissal. |
 | 1.4.0: Word-count limits | Independently enabled maximum words alongside minimum; inclusive limits; enabled-range validation preserving previous bounds; live counting aligned with existing authoritative PHP semantics; integration with all readiness and enforcement surfaces. |
 | 1.5.0: Category/tag count limits | Four independent category/tag minimum and maximum rules; maximum-zero support; taxonomy-pair validation; live/saved editor feedback; term-change invalidation; integration with readiness and publication enforcement; updated settings announcement. |
+| 1.6.0: Minimum internal links | Optional unique-destination minimum; offline PHP/editor counting; site-boundary validation; integration with readiness and publication enforcement; settings-only announcement. |
 
 Publication blocking is already implemented and remains Free. Its documented direct `wp_publish_post()` rollback limitation is not a promise of complete protection for raw or unsupported publication paths.
 
@@ -53,7 +54,7 @@ Publication blocking is already implemented and remains Free. Its documented dir
 
 ### 3. Basic internal-link count requirement
 
-**Status:** Planned; next user-facing feature after taxonomy count limits.
+**Status:** Implemented in 1.6.0. See [internal-link counting](internal-link-counting.md) for the counting contract.
 
 **Purpose:** Provide understandable validation for a minimum number of internal links in article content.
 

@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.5.0**
+Current release: **1.6.0**
 
 ## Free Version Features
 
@@ -15,7 +15,7 @@ Current release: **1.5.0**
 - Editor assets and checklist state are scoped to avoid unnecessary admin work.
 - Duplicate action for quickly cloning checklist templates.
 - Required and optional checklist items.
-- Ten configurable automatic requirements: featured image, excerpt, minimum/maximum words, category/tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
+- Eleven configurable automatic requirements: featured image, excerpt, minimum/maximum words, minimum unique internal links, category/tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
 - Public PHP and JavaScript registration API for code-defined automatic requirements.
 - Opt-in Advisory / Block publication policy per post type, with authoritative server checks and scheduled-publication revalidation.
 - Live automatic-result status in the block-editor sidebar.
@@ -54,6 +54,7 @@ Current release: **1.5.0**
 - [Free roadmap and implementation status](docs/free-roadmap.md)
 - [Planned Pro and premium-pack roadmap](docs/pro-roadmap.md)
 - [Automatic requirement rule API](docs/rule-registration-api.md)
+- [Internal-link counting semantics](docs/internal-link-counting.md)
 - [Publication policy behavior and integration limits](docs/publication-policy.md)
 
 Product scope defines feature placement, while the roadmaps distinguish completed work from planned additions. Planned Free, Pro, and premium-pack features are not availability claims. Only the features listed under **Free Version Features** are included in the current plugin. Historical research and superseded plans remain available in Git history.
@@ -71,12 +72,13 @@ Product scope defines feature placement, while the roadmaps distinguish complete
 - Review prompt user state: up to five completed post IDs, a snooze timestamp, and a closed status.
 - Publication modes: `publication_modes` inside `ediworman_settings`, keyed by post type (`advisory` or `block`).
 - Latest blocked attempt: `_ediworman_publication_blocked` stores a reason, scheduled-hold flag, and timestamp; current explanations are recomputed.
-- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.5.0`, independently per administrator and site. This category/tag-limits announcement replaces the earlier announcement and appears even if that earlier announcement was dismissed. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
+- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.6.0`, independently per administrator and site. This internal-link announcement replaces the earlier announcement and appears even if that earlier announcement was dismissed. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
 
 Legacy templates remain supported. When a legacy template is edited/saved in the row editor, it is upgraded to v2 and the legacy mirror meta remains written for compatibility.
 
 ## Scope Notes
 
+- Minimum internal links stores `{ enabled, minimum }` under `minimum_internal_link_count` in the existing automatic-requirements metadata. It is disabled by default with a suggested minimum of 1; enabled values accept whole numbers from 1 to 100,000. It counts unique literal anchor destinations within the site's home host, port, and base path. Fragments, repeated destinations, same-post links, and non-content markup do not count. No destinations are fetched and no dynamic content is rendered. See [the complete counting contract](docs/internal-link-counting.md).
 - Category and tag minimum/maximum counts are four separate requirements, disabled by default on existing and starter templates. Initial minimums are 1 and maximums are 5. Minimums accept whole numbers from 1 to 100,000; maximums accept 0 to 100,000. Both bounds are inclusive, and enabled minimum cannot exceed enabled maximum for the same taxonomy. Invalid submissions preserve that taxonomy's previous pair while unrelated valid changes save.
 - Counts include distinct, directly assigned terms, not unassigned ancestors or descendants. WordPress's assigned default category counts; a maximum of zero can therefore conflict with its default-category behavior. Unsupported taxonomies are excluded. Gutenberg shows current selections where available; otherwise it shows saved PHP results with save-to-refresh guidance. PHP evaluates final saved assignments. The existing category-or-tag presence rule is unchanged and remains independent.
 - Minimum and maximum word counts are independent required rules when enabled. Maximum defaults to 1,000 words but stays disabled on existing and starter templates. Enabled limits accept whole numbers from 1 to 100,000; both may be equal, but minimum cannot exceed maximum. Invalid submissions retain the previous word-limit pair while other valid checklist edits save.

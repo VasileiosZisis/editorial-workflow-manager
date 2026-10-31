@@ -77,6 +77,11 @@ class EDIWORMAN_Editor_Assets {
 		}
 
 		$editor_script_dependencies = array();
+		$internal_links_enabled = in_array( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT, array_column( $automatic_data['rules'], 'key' ), true );
+		if ( $internal_links_enabled ) {
+			wp_enqueue_script( 'ediworman-internal-links', EDIWORMAN_URL . 'assets/js/ediworman-internal-links.js', array(), EDIWORMAN_VERSION, true );
+			$editor_script_dependencies[] = 'ediworman-internal-links';
+		}
 		foreach ( $automatic_data['editorScripts'] as $editor_script ) {
 			if ( wp_script_is( $editor_script, 'registered' ) ) {
 				wp_enqueue_script( $editor_script );
@@ -118,6 +123,7 @@ class EDIWORMAN_Editor_Assets {
 		);
 
 		$post_id       = $post instanceof WP_Post ? absint( $post->ID ) : 0;
+		$permalink     = $internal_links_enabled ? EDIWORMAN_Internal_Links::get_post_url( $post_id ) : false;
 		$saved_results = $post_id > 0 ? EDIWORMAN_Automatic_Requirements::evaluate_post( $post_id ) : array();
 
 		wp_localize_script(
@@ -125,6 +131,11 @@ class EDIWORMAN_Editor_Assets {
 			'EDIWORMAN_CHECKLIST_DATA',
 			array(
 				'templateId'   => $template_id,
+				'internalLinkContext' => $internal_links_enabled ? array(
+					'homeUrl' => home_url( '/' ),
+					'postUrl' => $permalink ? $permalink : home_url( '/' ),
+					'entities' => EDIWORMAN_Internal_Links::get_entities(),
+				) : null,
 				'postType'     => $post_type,
 				'templateMode' => $template_mode,
 				'items'        => $items,

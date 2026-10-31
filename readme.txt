@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -166,6 +166,7 @@ Developer documentation is included in `docs/rule-registration-api.md`, together
 * Excerpt checking.
 * Minimum word-count checking.
 * Maximum word-count checking.
+* Minimum unique internal-link checking without fetching linked pages.
 * Category or tag checking.
 * Minimum and maximum category-count checking.
 * Minimum and maximum tag-count checking.
@@ -249,7 +250,9 @@ Editorial Workflow Manager adds an editorial checklist directly to the WordPress
 
 Yes.
 
-Checklist templates can include ten automatic requirements: featured image, excerpt, minimum/maximum words, category or tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
+Checklist templates can include eleven automatic requirements: featured image, excerpt, minimum/maximum words, minimum unique internal links, category or tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
+
+Minimum internal links is disabled by default, with a suggested minimum of 1. Enable it on a template and enter a whole number from 1 to 100,000. Invalid enabled values preserve the previous rule settings while unrelated valid edits save. Counts include unique literal anchor destinations within the site's home host, normalized port, and base path, including same-site files and images. Relative links resolve against the post permalink. Repeated destinations, fragments, and links to the current post do not count; query differences remain distinct. Other subdomains and sibling sites outside the home path are excluded. Dynamic blocks, synced-pattern references, and shortcodes are not rendered. Linked pages are never fetched or checked for existence. See docs/internal-link-counting.md for URL normalization, markup exclusions, and entity-decoding details.
 
 Category and tag count limits have four independent enable toggles and each counts as one required rule. They are disabled by default, with initial minimums of 1 and maximums of 5. Minimums accept whole numbers from 1 to 100,000; maximums accept 0 to 100,000. Enabled minimum cannot exceed enabled maximum for the same taxonomy, and equality is valid. Invalid submissions preserve that taxonomy's previous pair while other valid edits save.
 
@@ -361,6 +364,14 @@ A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
 
+= 1.6.0 =
+
+* Added an optional minimum unique internal-link requirement with matching offline PHP and Gutenberg counting.
+* Added accessible configuration validation preserving previous settings on invalid input.
+* Integrated internal links with readiness displays, manager tools, and authoritative publication checks.
+* Invalidated affected readiness when the site home URL or permalink settings change.
+* Updated the dismissible settings-only announcement with internal-link setup guidance.
+
 = 1.5.0 =
 
 * Added independently enabled minimum/maximum category and tag requirements with inclusive thresholds and maximum-zero support.
@@ -413,6 +424,10 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 == Upgrade Notice ==
+
+= 1.6.0 =
+
+Adds optional minimum unique internal links. Existing and starter templates keep the rule disabled until configured. Counts literal links within this site's home URL without fetching destinations; publication policy remains Advisory unless explicitly configured otherwise.
 
 = 1.5.0 =
 

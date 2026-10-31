@@ -22,6 +22,7 @@ class EDIWORMAN_Automatic_Requirements {
 	const EXCERPT                = 'excerpt';
 	const MINIMUM_WORD_COUNT     = 'minimum_word_count';
 	const MAXIMUM_WORD_COUNT     = 'maximum_word_count';
+	const MINIMUM_INTERNAL_LINK_COUNT = 'minimum_internal_link_count';
 	const TAXONOMY_PRESENCE      = 'taxonomy_presence';
 	const MINIMUM_CATEGORY_COUNT = 'minimum_category_count';
 	const MAXIMUM_CATEGORY_COUNT = 'maximum_category_count';
@@ -41,6 +42,7 @@ class EDIWORMAN_Automatic_Requirements {
 			self::EXCERPT            => array( 'post_fields' => array( 'post_excerpt' ) ),
 			self::MINIMUM_WORD_COUNT => array( 'post_fields' => array( 'post_content' ) ),
 			self::MAXIMUM_WORD_COUNT => array( 'post_fields' => array( 'post_content' ) ),
+			self::MINIMUM_INTERNAL_LINK_COUNT => array( 'post_fields' => array( 'post_content' ), 'taxonomies' => array( 'category' ) ),
 			self::TAXONOMY_PRESENCE  => array( 'taxonomies' => array( 'category', 'post_tag' ) ),
 			self::MINIMUM_CATEGORY_COUNT => array( 'taxonomies' => array( 'category' ) ),
 			self::MAXIMUM_CATEGORY_COUNT => array( 'taxonomies' => array( 'category' ) ),
@@ -78,6 +80,7 @@ class EDIWORMAN_Automatic_Requirements {
 			self::EXCERPT,
 			self::MINIMUM_WORD_COUNT,
 			self::MAXIMUM_WORD_COUNT,
+			self::MINIMUM_INTERNAL_LINK_COUNT,
 			self::TAXONOMY_PRESENCE,
 			self::MINIMUM_CATEGORY_COUNT,
 			self::MAXIMUM_CATEGORY_COUNT,
@@ -105,6 +108,7 @@ class EDIWORMAN_Automatic_Requirements {
 		return array(
 			self::MINIMUM_WORD_COUNT => array( 'group' => 'words', 'bound' => 'minimum', 'default' => self::DEFAULT_MINIMUM_WORDS, 'min' => 1 ),
 			self::MAXIMUM_WORD_COUNT => array( 'group' => 'words', 'bound' => 'maximum', 'default' => self::DEFAULT_MAXIMUM_WORDS, 'min' => 1 ),
+			self::MINIMUM_INTERNAL_LINK_COUNT => array( 'group' => 'internal_links', 'bound' => 'minimum', 'default' => 1, 'min' => 1 ),
 			self::MINIMUM_CATEGORY_COUNT => array( 'group' => 'categories', 'bound' => 'minimum', 'default' => 1, 'min' => 1 ),
 			self::MAXIMUM_CATEGORY_COUNT => array( 'group' => 'categories', 'bound' => 'maximum', 'default' => 5, 'min' => 0 ),
 			self::MINIMUM_TAG_COUNT => array( 'group' => 'tags', 'bound' => 'minimum', 'default' => 1, 'min' => 1 ),
@@ -175,7 +179,7 @@ class EDIWORMAN_Automatic_Requirements {
 					: self::DEFAULT_MAXIMUM_WORDS;
 				$config[ $rule_key ]['maximum'] = min( self::MAXIMUM_WORDS, max( 1, $maximum ) );
 			}
-			if ( self::get_count_rule_taxonomy( $rule_key ) ) {
+			if ( self::get_count_rule_taxonomy( $rule_key ) || self::MINIMUM_INTERNAL_LINK_COUNT === $rule_key ) {
 				$setting = self::get_limit_settings()[ $rule_key ];
 				$bound = $setting['bound'];
 				$value = $raw_rule[ $bound ] ?? $setting['default'];
@@ -282,6 +286,10 @@ class EDIWORMAN_Automatic_Requirements {
 				'label'       => __( 'Maximum word count', 'editorial-workflow-manager' ),
 				'description' => __( 'Limits readable words in the post content. Empty content passes this check; enable a minimum separately if needed.', 'editorial-workflow-manager' ),
 			),
+			self::MINIMUM_INTERNAL_LINK_COUNT => array(
+				'label' => __( 'Minimum internal links', 'editorial-workflow-manager' ),
+				'description' => __( 'Counts unique link destinations within this site’s home URL, including files and images. Repeated destinations count once; fragments and links to this post do not count. Checks literal content without loading linked pages or rendering dynamic content.', 'editorial-workflow-manager' ),
+			),
 			self::TAXONOMY_PRESENCE  => array(
 				'label'       => __( 'Category or tag present', 'editorial-workflow-manager' ),
 				'description' => __( 'Passes when at least one category or tag is assigned. Ignored when neither taxonomy is available.', 'editorial-workflow-manager' ),
@@ -365,7 +373,7 @@ class EDIWORMAN_Automatic_Requirements {
 				'config' => $config[ $rule_key ],
 			);
 
-			if ( self::MINIMUM_WORD_COUNT === $rule_key ) {
+			if ( self::MINIMUM_WORD_COUNT === $rule_key || self::MINIMUM_INTERNAL_LINK_COUNT === $rule_key ) {
 				$rule['minimum'] = (int) $config[ $rule_key ]['minimum'];
 			}
 			if ( self::MAXIMUM_WORD_COUNT === $rule_key ) {
@@ -482,6 +490,20 @@ class EDIWORMAN_Automatic_Requirements {
 		}
 
 		switch ( $rule_key ) {
+			case self::MINIMUM_INTERNAL_LINK_COUNT:
+				$minimum = (int) ( $config['minimum'] ?? 1 );
+				$count = EDIWORMAN_Internal_Links::count( (string) $post->post_content, home_url( '/' ), EDIWORMAN_Internal_Links::get_post_url( $post_id ) );
+				$passed = $count >= $minimum;
+				$message = sprintf(
+					/* translators: 1: actual unique internal-link count, 2: required minimum count. */
+					_n( '%1$d unique internal link; minimum %2$d.', '%1$d unique internal links; minimum %2$d.', $count, 'editorial-workflow-manager' ),
+					$count,
+					$minimum
+				);
+				if ( ! $passed ) {
+					$message .= ' ' . __( 'Add links to other destinations on this site.', 'editorial-workflow-manager' );
+				}
+				break;
 			case self::FEATURED_IMAGE:
 				$thumbnail_id = get_post_thumbnail_id( $post_id );
 				$thumbnail    = $thumbnail_id > 0 ? get_post( $thumbnail_id ) : null;
@@ -557,6 +579,14 @@ class EDIWORMAN_Automatic_Requirements {
 	 * @return string
 	 */
 	private static function get_readiness_label( $rule_key, $config ) {
+		if ( self::MINIMUM_INTERNAL_LINK_COUNT === $rule_key ) {
+			$minimum = (int) ( $config['minimum'] ?? 1 );
+			return sprintf(
+				/* translators: %d: required minimum unique internal-link count. */
+				_n( 'At least %d unique internal link', 'At least %d unique internal links', $minimum, 'editorial-workflow-manager' ),
+				$minimum
+			);
+		}
 		if ( self::get_count_rule_taxonomy( $rule_key ) ) {
 			$setting = self::get_limit_settings()[ $rule_key ];
 			$limit = (int) $config[ $setting['bound'] ];
@@ -682,6 +712,7 @@ class EDIWORMAN_Automatic_Requirements {
 			case self::MINIMUM_WORD_COUNT:
 			case self::MAXIMUM_WORD_COUNT:
 			case self::IMAGE_ALT_TEXT:
+			case self::MINIMUM_INTERNAL_LINK_COUNT:
 				return post_type_supports( $post_type, 'editor' );
 		}
 

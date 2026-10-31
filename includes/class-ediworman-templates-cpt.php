@@ -22,7 +22,7 @@ class EDIWORMAN_Templates_CPT {
 	private $word_limit_errors = array();
 
 	/**
-	 * Request-local category/tag validation codes, keyed by template.
+	 * Request-local taxonomy/link validation codes, keyed by template.
 	 *
 	 * @var array<int,array<string,string>>
 	 */
@@ -36,7 +36,7 @@ class EDIWORMAN_Templates_CPT {
 	 * @return string
 	 */
 	public function add_word_limit_error_to_redirect( $location, $post_id ) {
-		$location = remove_query_arg( array( 'ediworman_word_limits_error', '_ediworman_word_limits_nonce', 'ediworman_categories_limits_error', 'ediworman_tags_limits_error' ), $location );
+		$location = remove_query_arg( array( 'ediworman_word_limits_error', '_ediworman_word_limits_nonce', 'ediworman_categories_limits_error', 'ediworman_tags_limits_error', 'ediworman_internal_links_limits_error' ), $location );
 		if ( isset( $this->word_limit_errors[ $post_id ] ) ) {
 			$location = add_query_arg(
 				array(
@@ -82,10 +82,14 @@ class EDIWORMAN_Templates_CPT {
 			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $messages[ $error ] ) . '</p></div>';
 		}
 		$taxonomy_errors = array(
+			'internal_links' => isset( $_GET['ediworman_internal_links_limits_error'] ) ? sanitize_key( wp_unslash( $_GET['ediworman_internal_links_limits_error'] ) ) : '',
 			'categories' => isset( $_GET['ediworman_categories_limits_error'] ) ? sanitize_key( wp_unslash( $_GET['ediworman_categories_limits_error'] ) ) : '',
 			'tags' => isset( $_GET['ediworman_tags_limits_error'] ) ? sanitize_key( wp_unslash( $_GET['ediworman_tags_limits_error'] ) ) : '',
 		);
 		$taxonomy_messages = array(
+			'internal_links' => array(
+				'invalid' => __( 'The internal-link requirement was not changed. The enabled minimum must be a whole number from 1 to 100,000. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
+			),
 			'categories' => array(
 				'invalid' => __( 'Category limits were not changed. Enabled minimums must be whole numbers from 1 to 100,000; maximums may also be zero. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
 				'range' => __( 'Category limits were not changed. Minimum categories cannot exceed maximum categories when both are enabled. Other valid checklist changes were saved.', 'editorial-workflow-manager' ),
@@ -322,6 +326,7 @@ class EDIWORMAN_Templates_CPT {
 			'EDIWORMAN_TEMPLATE_EDITOR_DATA',
 			array(
 				'emptyLabelMessage'       => __( 'Item label is required.', 'editorial-workflow-manager' ),
+				'internalLinkLimitInvalid' => __( 'Enter a whole number from 1 to 100,000 for minimum internal links.', 'editorial-workflow-manager' ),
 				'untitledItem'            => __( 'Untitled checklist item', 'editorial-workflow-manager' ),
 				/* translators: 1: checklist item position, 2: total checklist item count. */
 				'rowLabel'                => __( 'Checklist item label, item %1$d of %2$d', 'editorial-workflow-manager' ),
@@ -451,6 +456,7 @@ class EDIWORMAN_Templates_CPT {
 		$definitions = EDIWORMAN_Automatic_Requirements::get_rule_definitions();
 		$limit_settings = EDIWORMAN_Automatic_Requirements::get_limit_settings();
 		$limit_labels = array(
+			'minimum_internal_link_count' => __( 'Minimum unique internal links', 'editorial-workflow-manager' ),
 			'minimum_word_count' => __( 'Minimum words', 'editorial-workflow-manager' ),
 			'maximum_word_count' => __( 'Maximum words', 'editorial-workflow-manager' ),
 			'minimum_category_count' => __( 'Minimum categories', 'editorial-workflow-manager' ),
@@ -528,7 +534,7 @@ class EDIWORMAN_Templates_CPT {
 					<?php endif; ?>
 				</div>
 			<?php endforeach; ?>
-			<?php foreach ( array( 'words', 'categories', 'tags' ) as $group ) : ?>
+			<?php foreach ( array( 'words', 'categories', 'tags', 'internal_links' ) as $group ) : ?>
 				<p id="<?php echo esc_attr( 'ediworman-' . $group . '-limit-error' ); ?>" class="ediworman-template-item-error" role="status" aria-live="polite" aria-atomic="true"></p>
 			<?php endforeach; ?>
 		</section>
@@ -720,7 +726,7 @@ class EDIWORMAN_Templates_CPT {
 		$automatic_requirements = EDIWORMAN_Automatic_Requirements::sanitize_config( $raw_automatic_requirements );
 		$previous_requirements  = EDIWORMAN_Automatic_Requirements::get_template_config( $post_id );
 		$limit_errors = array();
-		foreach ( array( 'words', 'categories', 'tags' ) as $group ) {
+		foreach ( array( 'words', 'categories', 'tags', 'internal_links' ) as $group ) {
 			$limit_errors[ $group ] = EDIWORMAN_Automatic_Requirements::validate_limit_group( $submitted_automatic_requirements, $group );
 		}
 		foreach ( EDIWORMAN_Automatic_Requirements::get_limit_settings() as $rule_id => $setting ) {
@@ -736,7 +742,7 @@ class EDIWORMAN_Templates_CPT {
 		} else {
 			unset( $this->word_limit_errors[ $post_id ] );
 		}
-		$this->taxonomy_limit_errors[ $post_id ] = array_filter( array_intersect_key( $limit_errors, array( 'categories' => true, 'tags' => true ) ) );
+		$this->taxonomy_limit_errors[ $post_id ] = array_filter( array_intersect_key( $limit_errors, array( 'categories' => true, 'tags' => true, 'internal_links' => true ) ) );
 		$has_automatic_rules    = false;
 		foreach ( $automatic_requirements as $automatic_requirement ) {
 			if ( ! empty( $automatic_requirement['enabled'] ) ) {

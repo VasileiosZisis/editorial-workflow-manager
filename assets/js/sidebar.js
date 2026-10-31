@@ -25,6 +25,7 @@
       'excerpt',
       'minimum_word_count',
       'maximum_word_count',
+      'minimum_internal_link_count',
       'taxonomy_presence',
       'minimum_category_count',
       'maximum_category_count',
@@ -102,6 +103,10 @@
               const maximum = parseInt(rule.maximum, 10);
               normalizedRule.maximum = !Number.isNaN(maximum) && maximum > 0 ? maximum : 1000;
             }
+            if (rule.key === 'minimum_internal_link_count') {
+              const minimum = Number(rule.minimum);
+              normalizedRule.minimum = Number.isInteger(minimum) && minimum >= 1 && minimum <= 100000 ? minimum : 1;
+            }
             if (/^(minimum|maximum)_(category|tag)_count$/.test(rule.key)) {
               normalizedRule.taxonomy = rule.taxonomy === 'category' ? 'category' : 'post_tag';
               const bound = rule.key.startsWith('minimum_') ? 'minimum' : 'maximum';
@@ -148,6 +153,7 @@
         scheduledHeld: rawData.publicationPolicy?.scheduledHeld === true,
       },
       automaticRequirements,
+      internalLinkContext: rawData.internalLinkContext || {},
       taxonomyRestBases,
       taxonomyRestFields: rawData.taxonomyRestFields && typeof rawData.taxonomyRestFields === 'object'
         ? Object.fromEntries(Object.entries(rawData.taxonomyRestFields).filter(([taxonomy, field]) =>
@@ -308,7 +314,7 @@
     return matches ? matches.length : 0;
   };
 
-  const evaluateAutomaticRequirements = (state, savedResults) => {
+  const evaluateAutomaticRequirements = (state, savedResults, internalLinkCount) => {
     const { automaticRequirements } = checklistData;
     const wordCount = automaticRuleKeys.has('minimum_word_count') || automaticRuleKeys.has('maximum_word_count')
       ? countWords(state.content) : 0;
@@ -374,6 +380,21 @@
           message = sprintf(messages[rule.key], count, limit) + (passed ? '' : ` ${guidance[rule.key]}`);
         }
       } else switch (rule.key) {
+        case 'minimum_internal_link_count': {
+          if (internalLinkCount === null) {
+            passed = false;
+            message = __('Internal links could not be checked. Save again or contact a site administrator.', 'editorial-workflow-manager');
+            break;
+          }
+          passed = internalLinkCount >= rule.minimum;
+          message = sprintf(
+            /* translators: 1: actual unique internal-link count, 2: required minimum count. */
+            _n('%1$d unique internal link; minimum %2$d.', '%1$d unique internal links; minimum %2$d.', internalLinkCount, 'editorial-workflow-manager'),
+            internalLinkCount, rule.minimum,
+          );
+          if (!passed) message += ' ' + __('Add links to other destinations on this site.', 'editorial-workflow-manager');
+          break;
+        }
         case 'featured_image':
           passed = state.featuredMediaId > 0;
           message = passed
@@ -543,6 +564,7 @@
 		) ||
         automaticRuleKeys.has('minimum_word_count') ||
         automaticRuleKeys.has('maximum_word_count') ||
+        automaticRuleKeys.has('minimum_internal_link_count') ||
         automaticRuleKeys.has('image_alt_text');
       const rawContent = needsContent
         ? editor.getEditedPostAttribute('content')
@@ -627,6 +649,9 @@
 		  !editor.isAutosavingPost() &&
 		  editor.didPostSaveRequestSucceed(),
         automaticState: {
+          permalink: automaticRuleKeys.has('minimum_internal_link_count') && typeof editor.getPermalink === 'function'
+            ? editor.getPermalink() || checklistData.internalLinkContext.postUrl
+            : checklistData.internalLinkContext.postUrl,
 		  select,
 		  meta: editor.getEditedPostAttribute('meta') || {},
 		  post: editor.getCurrentPost(),
@@ -678,9 +703,23 @@
 
     const { editPost } = useDispatch('core/editor');
 
+    const internalLinkCount = useMemo(() => {
+      if (!automaticRuleKeys.has('minimum_internal_link_count')) return 0;
+      try {
+        return window.EDIWORMAN_INTERNAL_LINKS.count(
+          automaticState.content,
+          checklistData.internalLinkContext.homeUrl,
+          automaticState.permalink,
+          checklistData.internalLinkContext.entities,
+        );
+      } catch (error) {
+        return null;
+      }
+    }, [automaticState.content, automaticState.permalink]);
+
     const automaticResults = useMemo(
-	  () => evaluateAutomaticRequirements(automaticState, savedAutomaticResults),
-	  [automaticState, savedAutomaticResults],
+	  () => evaluateAutomaticRequirements(automaticState, savedAutomaticResults, internalLinkCount),
+	  [automaticState, savedAutomaticResults, internalLinkCount],
     );
 
     const summary = useMemo(

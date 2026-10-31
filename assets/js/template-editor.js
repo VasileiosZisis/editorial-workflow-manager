@@ -117,7 +117,9 @@
           result.invalid = input;
           result.error = group === 'words'
             ? getMessage('wordLimitInvalid', 'Enter a whole number between 1 and 100,000 for each enabled word limit.')
-            : getMessage('taxonomyLimitInvalid', 'Enter a whole number from 1 to 100,000 for a minimum, or 0 to 100,000 for a maximum.');
+            : group === 'internal_links'
+              ? getMessage('internalLinkLimitInvalid', 'Enter a whole number from 1 to 100,000 for minimum internal links.')
+              : getMessage('taxonomyLimitInvalid', 'Enter a whole number from 1 to 100,000 for a minimum, or 0 to 100,000 for a maximum.');
         }
       } else {
         result.bounds[input.dataset.ediwormanLimitBound] = Number(input.value);

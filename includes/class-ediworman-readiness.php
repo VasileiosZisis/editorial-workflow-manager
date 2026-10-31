@@ -23,6 +23,7 @@ class EDIWORMAN_Readiness {
 
 	const CACHE_SCHEMA_VERSION_OPTION = 'ediworman_readiness_cache_version';
 	const CACHE_SCHEMA_VERSION        = '4';
+	const LINK_CONTEXT_OPTIONS = array( 'home', 'siteurl', 'permalink_structure', 'category_base', 'tag_base', 'default_category', 'show_on_front', 'page_on_front', 'page_for_posts' );
 
 	/**
 	 * Register readiness-related hooks.
@@ -31,7 +32,7 @@ class EDIWORMAN_Readiness {
 	 */
 	public static function register_hooks() {
 		add_action( 'admin_init', array( __CLASS__, 'maybe_invalidate_stale_cache_schema' ) );
-		add_action( 'save_post', array( __CLASS__, 'handle_content_post_save' ), 20, 1 );
+		add_action( 'save_post', array( __CLASS__, 'handle_content_post_save' ), 20, 3 );
 		add_action( 'save_post_ediworman_template', array( __CLASS__, 'handle_template_save' ), 20, 2 );
 		add_action( 'added_post_meta', array( __CLASS__, 'handle_checklist_meta_change' ), 10, 4 );
 		add_action( 'updated_post_meta', array( __CLASS__, 'handle_checklist_meta_change' ), 10, 4 );
@@ -41,6 +42,74 @@ class EDIWORMAN_Readiness {
 		add_action( 'delete_attachment', array( __CLASS__, 'handle_attachment_delete' ) );
 		add_action( 'updated_option', array( __CLASS__, 'handle_settings_option_updated' ), 10, 3 );
 		add_action( 'added_option', array( __CLASS__, 'handle_settings_option_added' ), 10, 2 );
+		add_action( 'deleted_option', array( __CLASS__, 'handle_link_context_option_deleted' ) );
+		add_action( 'post_updated', array( __CLASS__, 'handle_link_ancestor_change' ), 10, 3 );
+		add_action( 'deleted_post', array( __CLASS__, 'invalidate_link_slug_caches' ) );
+		add_action( 'edited_term', array( __CLASS__, 'handle_link_category_change' ), 10, 3 );
+		add_action( 'profile_update', array( __CLASS__, 'handle_link_author_change' ), 10, 2 );
+	}
+
+	/**
+	 * Slug/parent changes affect descendants and prospective draft slug uniqueness.
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param WP_Post $after   Updated post.
+	 * @param WP_Post $before  Previous post.
+	 * @return void
+	 */
+	public static function handle_link_ancestor_change( $post_id, $after, $before ) {
+		if ( $after->post_name !== $before->post_name || $after->post_parent !== $before->post_parent || $after->post_type !== $before->post_type ) {
+			self::invalidate_link_slug_caches();
+		}
+	}
+
+	/**
+	 * Slug availability can change another draft's prospective published URL.
+	 *
+	 * @return void
+	 */
+	public static function invalidate_link_slug_caches() {
+		self::invalidate_caches_for_rule( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT );
+	}
+
+	/**
+	 * Category ancestry/slugs can change a post's %category% permalink.
+	 *
+	 * @param int    $term_id  Term ID.
+	 * @param int    $tt_id    Taxonomy record ID.
+	 * @param string $taxonomy Taxonomy name.
+	 * @return void
+	 */
+	public static function handle_link_category_change( $term_id, $tt_id, $taxonomy ) {
+		if ( 'category' === $taxonomy && false !== strpos( get_option( 'permalink_structure', '' ), '%category%' ) ) {
+			self::invalidate_caches_for_rule( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT );
+		}
+	}
+
+	/**
+	 * Author nicenames can change %author% permalinks without saving posts.
+	 *
+	 * @param int     $user_id User ID.
+	 * @param WP_User $before  Previous user data.
+	 * @return void
+	 */
+	public static function handle_link_author_change( $user_id, $before ) {
+		$after = get_userdata( $user_id );
+		if ( $after && $after->user_nicename !== $before->user_nicename && false !== strpos( get_option( 'permalink_structure', '' ), '%author%' ) ) {
+			self::invalidate_caches_for_rule( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT );
+		}
+	}
+
+	/**
+	 * Deleting a URL setting changes the effective context to its default.
+	 *
+	 * @param string $option Deleted option name.
+	 * @return void
+	 */
+	public static function handle_link_context_option_deleted( $option ) {
+		if ( in_array( $option, self::LINK_CONTEXT_OPTIONS, true ) ) {
+			self::invalidate_caches_for_rule( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT );
+		}
 	}
 
 	/**
@@ -94,13 +163,18 @@ class EDIWORMAN_Readiness {
 	/**
 	 * Refresh readiness cache after a content post is saved.
 	 *
-	 * @param int $post_id Post ID being saved.
+	 * @param int          $post_id Post ID being saved.
+	 * @param WP_Post|null $post    Saved post, when called by the save hook.
+	 * @param bool         $update  Whether this updates an existing post.
 	 * @return void
 	 */
-	public static function handle_content_post_save( $post_id ) {
+	public static function handle_content_post_save( $post_id, $post = null, $update = true ) {
 		$post_id = absint( $post_id );
 		if ( $post_id <= 0 || wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
 			return;
+		}
+		if ( ! $update && $post && '' !== $post->post_name ) {
+			self::invalidate_link_slug_caches();
 		}
 
 		$post_type = get_post_type( $post_id );
@@ -229,6 +303,10 @@ class EDIWORMAN_Readiness {
 	 * @return void
 	 */
 	public static function handle_settings_option_updated( $option, $old_value, $value ) {
+		if ( in_array( $option, self::LINK_CONTEXT_OPTIONS, true ) ) {
+			self::invalidate_caches_for_rule( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT );
+			return;
+		}
 		if ( EDIWORMAN_Settings::OPTION_NAME !== $option ) {
 			return;
 		}
@@ -244,6 +322,10 @@ class EDIWORMAN_Readiness {
 	 * @return void
 	 */
 	public static function handle_settings_option_added( $option, $value ) {
+		if ( in_array( $option, self::LINK_CONTEXT_OPTIONS, true ) ) {
+			self::invalidate_caches_for_rule( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT );
+			return;
+		}
 		if ( EDIWORMAN_Settings::OPTION_NAME !== $option ) {
 			return;
 		}

@@ -22,7 +22,7 @@ class EDIWORMAN_Settings {
 	/**
 	 * Fixed feature announcement identity; routine updates must not reset it.
 	 */
-	const PUBLICATION_ANNOUNCEMENT_VERSION = '1.5.0';
+	const PUBLICATION_ANNOUNCEMENT_VERSION = '1.6.0';
 	const PUBLICATION_ANNOUNCEMENT_USER_OPTION = 'ediworman_publication_announcement_dismissed';
 	const PUBLICATION_ANNOUNCEMENT_ACTION = 'ediworman_dismiss_publication_announcement';
 	const PUBLICATION_ANNOUNCEMENT_NONCE_NAME = '_ediworman_announcement_nonce';
@@ -123,8 +123,8 @@ class EDIWORMAN_Settings {
 		}
 		?>
 		<div id="ediworman-publication-announcement" class="notice notice-info">
-			<p><strong><?php esc_html_e( 'New in 1.5.0: Category and tag limits', 'editorial-workflow-manager' ); ?></strong></p>
-			<p><?php esc_html_e( 'No action is required after updating. The new category and tag limits are disabled by default. To configure them, edit a checklist template, enable the minimum or maximum categories or tags requirements, enter limits, and save. Each enabled limit is an independent requirement; minimum cannot exceed maximum for the same taxonomy. The limits also apply to publication checks for post types using Block.', 'editorial-workflow-manager' ); ?></p>
+			<p><strong><?php esc_html_e( 'New in 1.6.0: Minimum internal links', 'editorial-workflow-manager' ); ?></strong></p>
+			<p><?php esc_html_e( 'No action is required after updating. The internal-link requirement is disabled by default. To configure it, edit a checklist template, enable Minimum internal links, enter the minimum number of unique destinations, and save. Only destinations within this site’s home URL count; repeated destinations and links to the current post do not count. Linked pages are never fetched. The requirement also applies to publication checks for post types using Block.', 'editorial-workflow-manager' ); ?></p>
 			<form id="ediworman-publication-announcement-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::PUBLICATION_ANNOUNCEMENT_ACTION ); ?>">
 				<?php wp_nonce_field( self::PUBLICATION_ANNOUNCEMENT_ACTION, self::PUBLICATION_ANNOUNCEMENT_NONCE_NAME, false ); ?>
