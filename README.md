@@ -6,6 +6,13 @@ Editorial Workflow Manager helps editors and content teams create reusable check
 
 Current release: **1.6.0**
 
+## Technical highlights
+
+- **Gutenberg integration:** Uses WordPress editor components and the `core/editor` data store to keep checklist state, live rule feedback, and pre-publish guidance connected to the editing workflow.
+- **Configurable rules:** Combines reusable manual checklists with eleven configurable automatic requirements and an extensible [PHP/JavaScript rule registration API](docs/rule-registration-api.md). PHP evaluation is authoritative; optional JavaScript evaluators provide provisional live feedback.
+- **Server-authoritative publication checks:** Opt-in Block mode evaluates saved post data before first publication or scheduling through the core REST controller and supported programmatic save APIs, then revalidates scheduled posts when publication is due. See [enforcement behavior and integration limits](docs/publication-policy.md).
+- **Backward compatibility:** Supports legacy label-based templates and checked state alongside UUID-based items, upgrades templates when saved in the row editor, and maintains legacy template metadata for compatibility.
+
 ## Free Version Features
 
 - Reusable checklist templates (`ediworman_template` CPT).
