@@ -22,6 +22,19 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 function ediworman_uninstall_cleanup_site() {
 	global $wpdb;
 
+	// Events retain staging keys even when transients live in an external cache.
+	foreach ( (array) _get_cron_array() as $timestamp => $hooks ) {
+		foreach ( $hooks['ediworman_template_import_cleanup'] ?? array() as $event ) {
+			$args = $event['args'];
+			if ( is_array( $args ) && 2 === count( $args ) && is_string( $args[0] ) && preg_match( '/^ediworman_import_[0-9]+_[0-9]+_[a-zA-Z0-9]{48}$/D', $args[0] ) && is_string( $args[1] ) && hash_equals( 'ediworman_import_claim_' . hash( 'sha256', $args[0] ), $args[1] ) ) {
+				delete_transient( $args[0] );
+				delete_option( $args[1] );
+			}
+			wp_unschedule_event( $timestamp, 'ediworman_template_import_cleanup', $args );
+		}
+	}
+	delete_option( 'ediworman_import_title_claim' );
+
 	// User options are stored under the current site's database prefix.
 	delete_metadata( 'user', 0, $wpdb->get_blog_prefix() . 'ediworman_publication_announcement_dismissed', '', true );
 

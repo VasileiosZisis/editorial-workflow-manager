@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -173,6 +173,7 @@ Developer documentation is included in `docs/rule-registration-api.md`, together
 * Image alternative-text checking.
 * Helper text and reference links.
 * Template duplication.
+* Local JSON template import/export with validation and preview.
 * Different checklists for different post types.
 * Per-post checklist progress.
 * Ready / Incomplete publishing status.
@@ -233,6 +234,12 @@ You can change post-type mappings later under Settings > Editorial Workflow and 
 6. Customize templates from Checklist Templates and mappings from Settings > Editorial Workflow.
 
 == Frequently Asked Questions ==
+
+= Can I transfer checklist templates between sites? =
+
+Yes. Use Checklist Templates > Import/Export or the Export JSON template row action. Export one template, then upload the JSON file on another site, review the server-side preview, and confirm Create new template. Import always creates a new unmapped copy. It preserves legacy/V2 items, UUIDs, helper text, reference URLs, and built-in/custom-rule enablement. Unavailable custom providers are preserved with a warning and do not contribute to readiness until active.
+
+Existing templates, post checklist state, mappings, and publication policies are not changed. Transfer does not enable Block or install provider code. JSON uploads are limited to 1 MiB or the server limit if lower, previews expire after 15 minutes, and no file is executed or sent to an external service. See docs/template-portability.md for the format and validation details.
 
 = What is an editorial checklist in WordPress? =
 
@@ -364,6 +371,13 @@ A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
 
+= 1.7.0 =
+
+* Added local JSON template export/import, with strict validation and an accessible server-side preview.
+* Preserved legacy and V2 item data, UUIDs, rule settings, and inactive custom-rule enablement in new unmapped copies.
+* Added expiring user/site preview storage, atomic confirmation claims, and cleanup of failed or cancelled imports.
+* Added portability regression coverage and updated the settings-only feature announcement.
+
 = 1.6.0 =
 
 * Added an optional minimum unique internal-link requirement with matching offline PHP and Gutenberg counting.
@@ -424,6 +438,10 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 == Upgrade Notice ==
+
+= 1.7.0 =
+
+Adds basic JSON template import/export under Checklist Templates. Imports create new unmapped copies after preview and confirmation. Existing checklists, mappings, and publication policies are not changed.
 
 = 1.6.0 =
 

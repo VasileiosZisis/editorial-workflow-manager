@@ -2,7 +2,7 @@
 
 This document tracks implementation status and delivery order for the Free plugin. [Product scope](product-scope.md) owns feature placement; technical behavior is documented in the [rule-registration API](rule-registration-api.md) and [publication policy](publication-policy.md).
 
-The current implemented baseline is **1.6.0**. Word-count, taxonomy count limits, and minimum internal links are implemented; JSON portability remains planned. No future release numbers, dates, or effort estimates are assigned here.
+The current implemented baseline is **1.7.0**. All four feature additions in this Free delivery sequence are implemented, including JSON template portability. No future release numbers, dates, or effort estimates are assigned here.
 
 ## Completed milestones
 
@@ -16,6 +16,7 @@ The current implemented baseline is **1.6.0**. Word-count, taxonomy count limits
 | 1.4.0: Word-count limits | Independently enabled maximum words alongside minimum; inclusive limits; enabled-range validation preserving previous bounds; live counting aligned with existing authoritative PHP semantics; integration with all readiness and enforcement surfaces. |
 | 1.5.0: Category/tag count limits | Four independent category/tag minimum and maximum rules; maximum-zero support; taxonomy-pair validation; live/saved editor feedback; term-change invalidation; integration with readiness and publication enforcement; updated settings announcement. |
 | 1.6.0: Minimum internal links | Optional unique-destination minimum; offline PHP/editor counting; site-boundary validation; integration with readiness and publication enforcement; settings-only announcement. |
+| 1.7.0: JSON template portability | Single-template local export/import; strict validation and server-side preview; new unmapped copies; preserved legacy/V2 items and rule settings; expiring user/site staging and atomic confirmation claims. |
 
 Publication blocking is already implemented and remains Free. Its documented direct `wp_publish_post()` rollback limitation is not a promise of complete protection for raw or unsupported publication paths.
 
@@ -70,7 +71,7 @@ Publication blocking is already implemented and remains Free. Its documented dir
 
 ### 4. Basic JSON template import/export
 
-**Status:** Planned; lower priority, after the additional content rules.
+**Status:** Implemented in 1.7.0. See [JSON template portability](template-portability.md) for the workflow and format.
 
 **Purpose:** Let users reuse checklist templates across sites through ordinary file transfer.
 

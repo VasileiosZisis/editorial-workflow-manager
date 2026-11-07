@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Editorial Workflow Manager
  * Description: Add editorial checklists and approvals to the WordPress editor.
- * Version:     1.6.0
+ * Version:     1.7.0
  * Author:      Vasileios Zisis
  * Author URI:  https://profiles.wordpress.org/vzisis/
  * Text Domain: editorial-workflow-manager
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class EDIWORMAN_Plugin {
 
-	const VERSION = '1.6.0';
+	const VERSION = '1.7.0';
 
 	/**
 	 * Stored plugin version option name.
@@ -139,6 +139,7 @@ final class EDIWORMAN_Plugin {
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-readiness.php';
 		require_once EDIWORMAN_PATH . 'includes/functions-ediworman-rules.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-templates-cpt.php';
+		require_once EDIWORMAN_PATH . 'includes/class-ediworman-template-portability.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-settings.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-meta.php';
 		require_once EDIWORMAN_PATH . 'includes/class-ediworman-editor-assets.php';
@@ -160,6 +161,7 @@ final class EDIWORMAN_Plugin {
 		$this->manager_visibility = is_admin() ? new EDIWORMAN_Manager_Visibility() : null;
 
 		EDIWORMAN_Rule_Registry::register_hooks();
+		EDIWORMAN_Template_Portability::register_hooks();
 		EDIWORMAN_Readiness::register_hooks();
 		EDIWORMAN_Publication_Policy::register_hooks();
 

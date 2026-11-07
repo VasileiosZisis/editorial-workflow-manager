@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.6.0**
+Current release: **1.7.0**
 
 ## Technical highlights
 
@@ -21,6 +21,7 @@ Current release: **1.6.0**
 - Keyboard and screen-reader support across checklist and template workflows.
 - Editor assets and checklist state are scoped to avoid unnecessary admin work.
 - Duplicate action for quickly cloning checklist templates.
+- Local JSON template import/export with server-side preview, validation, and new-copy imports.
 - Required and optional checklist items.
 - Eleven configurable automatic requirements: featured image, excerpt, minimum/maximum words, minimum unique internal links, category/tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
 - Public PHP and JavaScript registration API for code-defined automatic requirements.
@@ -62,6 +63,7 @@ Current release: **1.6.0**
 - [Planned Pro and premium-pack roadmap](docs/pro-roadmap.md)
 - [Automatic requirement rule API](docs/rule-registration-api.md)
 - [Internal-link counting semantics](docs/internal-link-counting.md)
+- [JSON template transfer and format](docs/template-portability.md)
 - [Publication policy behavior and integration limits](docs/publication-policy.md)
 
 Product scope defines feature placement, while the roadmaps distinguish completed work from planned additions. Planned Free, Pro, and premium-pack features are not availability claims. Only the features listed under **Free Version Features** are included in the current plugin. Historical research and superseded plans remain available in Git history.
@@ -79,12 +81,13 @@ Product scope defines feature placement, while the roadmaps distinguish complete
 - Review prompt user state: up to five completed post IDs, a snooze timestamp, and a closed status.
 - Publication modes: `publication_modes` inside `ediworman_settings`, keyed by post type (`advisory` or `block`).
 - Latest blocked attempt: `_ediworman_publication_blocked` stores a reason, scheduled-hold flag, and timestamp; current explanations are recomputed.
-- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.6.0`, independently per administrator and site. This internal-link announcement replaces the earlier announcement and appears even if that earlier announcement was dismissed. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
+- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.7.0`, independently per administrator and site. This JSON-transfer announcement replaces the earlier announcement and appears even if that earlier announcement was dismissed. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
 
 Legacy templates remain supported. When a legacy template is edited/saved in the row editor, it is upgraded to v2 and the legacy mirror meta remains written for compatibility.
 
 ## Scope Notes
 
+- JSON transfer creates new, unmapped templates and preserves legacy/V2 items, UUIDs, and rule configuration. It transfers no mappings, policies, users, credentials, or checked state. Upload → preview → confirm works without JavaScript; previews expire after 15 minutes. See [the transfer format and limits](docs/template-portability.md).
 - Minimum internal links stores `{ enabled, minimum }` under `minimum_internal_link_count` in the existing automatic-requirements metadata. It is disabled by default with a suggested minimum of 1; enabled values accept whole numbers from 1 to 100,000. It counts unique literal anchor destinations within the site's home host, port, and base path. Fragments, repeated destinations, same-post links, and non-content markup do not count. No destinations are fetched and no dynamic content is rendered. See [the complete counting contract](docs/internal-link-counting.md).
 - Category and tag minimum/maximum counts are four separate requirements, disabled by default on existing and starter templates. Initial minimums are 1 and maximums are 5. Minimums accept whole numbers from 1 to 100,000; maximums accept 0 to 100,000. Both bounds are inclusive, and enabled minimum cannot exceed enabled maximum for the same taxonomy. Invalid submissions preserve that taxonomy's previous pair while unrelated valid changes save.
 - Counts include distinct, directly assigned terms, not unassigned ancestors or descendants. WordPress's assigned default category counts; a maximum of zero can therefore conflict with its default-category behavior. Unsupported taxonomies are excluded. Gutenberg shows current selections where available; otherwise it shows saved PHP results with save-to-refresh guidance. PHP evaluates final saved assignments. The existing category-or-tag presence rule is unchanged and remains independent.

@@ -1,0 +1,26 @@
+{
+  "format": "editorial-workflow-manager/template",
+  "schema_version": 1,
+  "template": {
+    "title": "Editorial transfer — café",
+    "item_format": "v2",
+    "items": [
+      { "id": "d452be02-2455-4c21-aac7-efac7e9dd35c", "label": "Check source's accuracy", "required": true, "description": "First line\nSecond line: C:\\drafts", "url": "https://example.test/reference?first=1&second=2" },
+      { "id": "6b97e11a-b186-475d-b610-0b4edfc27812", "label": "Optional final review", "required": false, "description": "", "url": "" }
+    ],
+    "automatic_requirements": {
+      "featured_image": { "enabled": false },
+      "excerpt": { "enabled": true },
+      "minimum_word_count": { "enabled": true, "minimum": 1 },
+      "maximum_word_count": { "enabled": true, "maximum": 100000 },
+      "minimum_internal_link_count": { "enabled": true, "minimum": 2 },
+      "taxonomy_presence": { "enabled": false },
+      "minimum_category_count": { "enabled": false, "minimum": 1 },
+      "maximum_category_count": { "enabled": false, "maximum": 0 },
+      "minimum_tag_count": { "enabled": false, "minimum": 1 },
+      "maximum_tag_count": { "enabled": false, "maximum": 0 },
+      "image_alt_text": { "enabled": false },
+      "fixture/unavailable": { "enabled": true }
+    }
+  }
+}
