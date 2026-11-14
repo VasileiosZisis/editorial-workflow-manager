@@ -59,7 +59,7 @@ class EDIWORMAN_Automatic_Requirements {
 				$rule_key,
 				array(
 					'api_version'       => EDIWORMAN_Rule_Registry::API_VERSION,
-					'rule_version'      => '1.0.0',
+					'rule_version'      => self::IMAGE_ALT_TEXT === $rule_key ? '1.1.0' : '1.0.0',
 					'label'             => $definitions[ $rule_key ]['label'],
 					'description'       => $definitions[ $rule_key ]['description'],
 					'dependencies'      => $dependencies[ $rule_key ],
@@ -312,7 +312,7 @@ class EDIWORMAN_Automatic_Requirements {
 			),
 			self::IMAGE_ALT_TEXT     => array(
 				'label'       => __( 'Image alternative-text coverage', 'editorial-workflow-manager' ),
-				'description' => __( 'Passes when the featured image and content images have non-empty alternative text.', 'editorial-workflow-manager' ),
+				'description' => __( 'Checks alternative text on the featured image and in post content. Explicitly decorative Image blocks can use empty alternative text.', 'editorial-workflow-manager' ),
 			),
 		);
 	}
@@ -550,18 +550,29 @@ class EDIWORMAN_Automatic_Requirements {
 				break;
 			case self::IMAGE_ALT_TEXT:
 				$image_summary = self::get_image_alt_summary( $post );
-				$passed        = 0 === $image_summary['missing'];
-				$message       = $passed
-					? sprintf(
-						/* translators: %d: number of images checked. */
-						__( '%d image(s) checked.', 'editorial-workflow-manager' ),
-						$image_summary['total']
-					)
-					: sprintf(
-						/* translators: %s: comma-separated image locations missing alternative text. */
+				$passed        = ! $image_summary['missing'] && ! $image_summary['invalid'];
+				$messages      = array();
+				if ( $image_summary['missing'] ) {
+					$messages[] = sprintf(
+						/* translators: %s: locations of images missing alternative text. */
 						__( 'Add alternative text to: %s.', 'editorial-workflow-manager' ),
-						implode( ', ', $image_summary['missing_labels'] )
+						implode( ', ', $image_summary['missing'] )
 					);
+				}
+				if ( $image_summary['invalid'] ) {
+					$messages[] = sprintf(
+						/* translators: %s: locations of images with inconsistent decorative settings. */
+						__( 'Review decorative settings for: %s. Use empty alternative text on an unlinked image with lightbox disabled, or clear the decorative setting and add alternative text.', 'editorial-workflow-manager' ),
+						implode( ', ', $image_summary['invalid'] )
+					);
+				}
+				$messages[] = sprintf(
+					/* translators: 1: number of decorative images, 2: number of images that need attention. */
+					__( 'Decorative images: %1$d. Images needing attention: %2$d.', 'editorial-workflow-manager' ),
+					$image_summary['decorative'],
+					count( $image_summary['missing'] ) + count( $image_summary['invalid'] )
+				);
+				$message = implode( ' ', $messages );
 				break;
 		}
 
@@ -621,7 +632,7 @@ class EDIWORMAN_Automatic_Requirements {
 			self::FEATURED_IMAGE    => __( 'Featured image present', 'editorial-workflow-manager' ),
 			self::EXCERPT           => __( 'Excerpt present', 'editorial-workflow-manager' ),
 			self::TAXONOMY_PRESENCE => __( 'Category or tag present', 'editorial-workflow-manager' ),
-			self::IMAGE_ALT_TEXT    => __( 'All images have alternative text', 'editorial-workflow-manager' ),
+			self::IMAGE_ALT_TEXT    => __( 'Images have alternative text or are explicitly decorative', 'editorial-workflow-manager' ),
 		);
 
 		if ( isset( $labels[ $rule_key ] ) ) {
@@ -735,138 +746,33 @@ class EDIWORMAN_Automatic_Requirements {
 	}
 
 	/**
-	 * Return total and missing-alt counts for featured and content images.
+	 * Check content occurrences and the post's featured image.
 	 *
 	 * @param WP_Post $post Content post.
-	 * An empty alternative-text value is treated as incomplete. This keeps the
-	 * Lite rule deterministic; templates that intentionally use decorative
-	 * images can leave this rule disabled.
-	 *
-	 * @return array{total:int,missing:int,missing_labels:array<int,string>}
+	 * @return array
 	 */
 	private static function get_image_alt_summary( $post ) {
-		$images       = array();
+		$summary = array( 'decorative' => 0, 'missing' => array(), 'invalid' => array() );
 		$thumbnail_id = get_post_thumbnail_id( $post->ID );
-
 		if ( $thumbnail_id > 0 ) {
-			$images[] = array(
-				'id'     => $thumbnail_id,
-				'alt'    => '',
-				'source' => __( 'Featured image', 'editorial-workflow-manager' ),
-			);
+			$attachment = get_post( $thumbnail_id );
+			if ( ! $attachment || 'attachment' !== $attachment->post_type || ! EDIWORMAN_Image_Alt::has_alt( get_post_meta( $thumbnail_id, '_wp_attachment_image_alt', true ), false ) ) {
+				$summary['missing'][] = __( 'Featured image', 'editorial-workflow-manager' );
+			}
 		}
-
-		self::collect_images_from_blocks( parse_blocks( (string) $post->post_content ), $images );
-
-		$missing        = 0;
-		$missing_labels = array();
-		$content_image  = 0;
-		foreach ( $images as $image ) {
-			$alt = isset( $image['alt'] ) ? trim( wp_strip_all_tags( (string) $image['alt'] ) ) : '';
-			$id  = isset( $image['id'] ) ? absint( $image['id'] ) : 0;
-			$source = isset( $image['source'] ) ? sanitize_text_field( (string) $image['source'] ) : '';
-
-			if ( '' === $source ) {
-				++$content_image;
-				$source = sprintf(
+		foreach ( EDIWORMAN_Image_Alt::collect( (string) $post->post_content ) as $index => $image ) {
+			$status = EDIWORMAN_Image_Alt::status( $image );
+			if ( 'decorative' === $status ) {
+				++$summary['decorative'];
+			} elseif ( 'pass' !== $status ) {
+				$summary[ $status ][] = sprintf(
 					/* translators: %d: image position in post content. */
 					__( 'Content image %d', 'editorial-workflow-manager' ),
-					$content_image
+					$index + 1
 				);
 			}
-
-			if ( '' === $alt && $id > 0 ) {
-				$alt = trim( wp_strip_all_tags( (string) get_post_meta( $id, '_wp_attachment_image_alt', true ) ) );
-			}
-
-			if ( '' === $alt ) {
-				++$missing;
-				$missing_labels[] = $source;
-			}
 		}
-
-		return array(
-			'total'   => count( $images ),
-			'missing' => $missing,
-			'missing_labels' => $missing_labels,
-		);
-	}
-
-	/**
-	 * Collect image references from parsed blocks.
-	 *
-	 * @param array $blocks Parsed blocks.
-	 * @param array $images Collected image references.
-	 * @return void
-	 */
-	private static function collect_images_from_blocks( $blocks, &$images ) {
-		if ( ! is_array( $blocks ) ) {
-			return;
-		}
-
-		foreach ( $blocks as $block ) {
-			if ( ! is_array( $block ) ) {
-				continue;
-			}
-
-			$block_name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
-			$attrs      = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
-
-			if ( 'core/image' === $block_name ) {
-				$html_image = self::get_first_image_from_html( (string) ( $block['innerHTML'] ?? '' ) );
-				$images[]   = array(
-					'id'  => isset( $attrs['id'] ) ? absint( $attrs['id'] ) : $html_image['id'],
-					'alt' => isset( $attrs['alt'] ) && is_scalar( $attrs['alt'] ) ? (string) $attrs['alt'] : $html_image['alt'],
-				);
-			} else {
-				self::collect_images_from_html( (string) ( $block['innerHTML'] ?? '' ), $images );
-
-				if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
-					self::collect_images_from_blocks( $block['innerBlocks'], $images );
-				}
-			}
-		}
-	}
-
-	/**
-	 * Collect every image reference found in an HTML fragment.
-	 *
-	 * @param string $html   HTML fragment.
-	 * @param array  $images Collected image references.
-	 * @return void
-	 */
-	private static function collect_images_from_html( $html, &$images ) {
-		if ( ! preg_match_all( '/<img\\b[^>]*>/i', $html, $matches ) ) {
-			return;
-		}
-
-		foreach ( $matches[0] as $image_html ) {
-			$images[] = self::get_first_image_from_html( $image_html );
-		}
-	}
-
-	/**
-	 * Extract attachment ID and alternative text from the first image in HTML.
-	 *
-	 * @param string $html HTML fragment.
-	 * @return array{id:int,alt:string}
-	 */
-	private static function get_first_image_from_html( $html ) {
-		$id  = 0;
-		$alt = '';
-
-		if ( preg_match( '/\\bwp-image-(\\d+)\\b/i', $html, $id_match ) ) {
-			$id = absint( $id_match[1] );
-		}
-
-		if ( preg_match( '/\\balt\\s*=\\s*(["\'])(.*?)\\1/is', $html, $alt_match ) ) {
-			$alt = html_entity_decode( wp_strip_all_tags( $alt_match[2] ), ENT_QUOTES, get_bloginfo( 'charset' ) );
-		}
-
-		return array(
-			'id'  => $id,
-			'alt' => $alt,
-		);
+		return $summary;
 	}
 
 	/**

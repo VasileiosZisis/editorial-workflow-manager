@@ -10,7 +10,6 @@
   const { Fragment, createElement: el, useEffect, useMemo, useState } = wp.element;
   const { useSelect, useDispatch } = wp.data;
   const { __, _n, sprintf } = wp.i18n;
-  const { parse: parseBlocks } = wp.blocks;
   const apiFetch = wp.apiFetch;
 
   const UUID_PATTERN =
@@ -154,6 +153,7 @@
       },
       automaticRequirements,
       internalLinkContext: rawData.internalLinkContext || {},
+      imageAltContext: rawData.imageAltContext || {},
       taxonomyRestBases,
       taxonomyRestFields: rawData.taxonomyRestFields && typeof rawData.taxonomyRestFields === 'object'
         ? Object.fromEntries(Object.entries(rawData.taxonomyRestFields).filter(([taxonomy, field]) =>
@@ -196,6 +196,30 @@
 
   const feedbackData = getFeedbackData();
 
+  const hasCustomEvaluator = checklistData.automaticRequirements.some(
+    (rule) => !rule.builtin && rule.hasClientEvaluator,
+  );
+  let lastImageContent;
+  let lastContentImages;
+  const getContentImages = (content) => {
+    if (content === lastImageContent) return lastContentImages;
+    lastImageContent = content;
+    try {
+      lastContentImages = window.EDIWORMAN_IMAGE_ALT.collect(content, checklistData.imageAltContext.lightboxDefault).map((image, index) => ({
+        ...image,
+        source: sprintf(
+          /* translators: %d: image position in post content. */
+          __('Content image %d', 'editorial-workflow-manager'),
+          index + 1,
+        ),
+      }));
+    } catch (error) {
+      lastContentImages = null;
+    }
+    return lastContentImages;
+  };
+
+  // Preserve the image data supplied to existing custom client evaluators.
   const getImagesFromHtml = (html) => {
     if (typeof html !== 'string' || !html) {
       return [];
@@ -245,11 +269,11 @@
     });
   };
 
-  const getContentImages = (content) => {
+  const getProviderImages = (content) => {
     const images = [];
 
     try {
-      collectImagesFromBlocks(parseBlocks(content || ''), images);
+      collectImagesFromBlocks(wp.blocks.parse(content || ''), images);
     } catch (error) {
       return getImagesFromHtml(content || '');
     }
@@ -264,11 +288,8 @@
     }));
   };
 
-  const countWords = (content) => {
-    const html = String(content || '')
-      .replace(/\[[^\]]*\]/g, ' ')
-      .replace(/<(script|style)[^>]*?>[\s\S]*?<\/\1>/gi, '')
-      .replace(/\0/g, '');
+  const stripMarkup = (html) => {
+    html = html.replace(/<(script|style)[^>]*?>[\s\S]*?<\/\1>/gi, '').replace(/\0/g, '');
     // Like PHP strip_tags(), tags concatenate adjacent text rather than add spaces.
     let stripped = '';
     for (let i = 0; i < html.length; i++) {
@@ -299,6 +320,11 @@
         }
       }
     }
+    return stripped;
+  };
+
+  const countWords = (content) => {
+    const stripped = stripMarkup(String(content || '').replace(/\[[^\]]*\]/g, ' '));
     const entities = window.EDIWORMAN_CHECKLIST_DATA?.wordCountEntities || {};
     const text = stripped.replace(/&(?:#[xX][0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);/g, (entity) => {
       if (Object.prototype.hasOwnProperty.call(entities, entity)) return entities[entity];
@@ -329,20 +355,20 @@
 	const savedResultsByKey = new Map(
 	  savedResults.map((result) => [result.key, result]),
 	);
-    const imageSummary = state.images.reduce(
-      (summary, image) => {
-        const mediaAlt = image.id > 0 ? state.mediaAlts[image.id] || '' : '';
-        const hasAlt = !!String(image.alt || mediaAlt).trim();
-        return {
-          total: summary.total + 1,
-          missing: summary.missing + (hasAlt ? 0 : 1),
-          missingLabels: hasAlt
-            ? summary.missingLabels
-            : [...summary.missingLabels, image.source],
-        };
-      },
-      { total: 0, missing: 0, missingLabels: [] },
-    );
+    const imageSummary = { decorative: 0, missing: [], invalid: [] };
+    if (automaticRuleKeys.has('image_alt_text') && !state.imageScanFailed) {
+      const imageAlt = window.EDIWORMAN_IMAGE_ALT;
+      state.images.forEach((image) => {
+        const status = image === state.featuredImage
+          ? (imageAlt.hasAlt(stripMarkup(state.mediaAlts[image.id] || ''), false) ? 'pass' : 'missing')
+          : imageAlt.status(image);
+        if (status === 'decorative') {
+          imageSummary.decorative += 1;
+        } else if (status !== 'pass') {
+          imageSummary[status].push(image.source);
+        }
+      });
+    }
 
     return automaticRequirements.map((rule) => {
       let passed = false;
@@ -435,20 +461,36 @@
             ? __('Category or tag detected.', 'editorial-workflow-manager')
             : __('Assign at least one category or tag.', 'editorial-workflow-manager');
           break;
-        case 'image_alt_text':
-          passed = imageSummary.missing === 0;
-          message = passed
-            ? sprintf(
-                /* translators: %d: number of images checked */
-                __('%d image(s) checked.', 'editorial-workflow-manager'),
-                imageSummary.total,
-              )
-            : sprintf(
-                /* translators: %s: comma-separated image locations missing alternative text */
-                __('Add alternative text to: %s.', 'editorial-workflow-manager'),
-                imageSummary.missingLabels.join(', '),
-              );
+        case 'image_alt_text': {
+          if (state.imageScanFailed) {
+            message = checklistData.ruleMessages.evaluationError;
+            break;
+          }
+          passed = !imageSummary.missing.length && !imageSummary.invalid.length;
+          const messages = [];
+          if (imageSummary.missing.length) {
+            messages.push(sprintf(
+              /* translators: %s: locations of images missing alternative text. */
+              __('Add alternative text to: %s.', 'editorial-workflow-manager'),
+              imageSummary.missing.join(', '),
+            ));
+          }
+          if (imageSummary.invalid.length) {
+            messages.push(sprintf(
+              /* translators: %s: locations of images with inconsistent decorative settings. */
+              __('Review decorative settings for: %s. Use empty alternative text on an unlinked image with lightbox disabled, or clear the decorative setting and add alternative text.', 'editorial-workflow-manager'),
+              imageSummary.invalid.join(', '),
+            ));
+          }
+          messages.push(sprintf(
+            /* translators: 1: number of decorative images, 2: number of images that need attention. */
+            __('Decorative images: %1$d. Images needing attention: %2$d.', 'editorial-workflow-manager'),
+            imageSummary.decorative,
+            imageSummary.missing.length + imageSummary.invalid.length,
+          ));
+          message = messages.join(' ');
           break;
+        }
 		default: {
 		  const clientResult =
 		    rule.hasClientEvaluator && window.EDIWORMAN_RULES
@@ -460,7 +502,7 @@
 		          content: state.content,
 		          excerpt: state.excerpt,
 		          featuredMediaId: state.featuredMediaId,
-		          images: state.images,
+		          images: state.providerImages,
 		          mediaAlts: state.mediaAlts,
 		          taxonomyTerms: state.taxonomyTerms,
 		          select: state.select,
@@ -558,10 +600,7 @@
     useSelect((select) => {
       const editor = select('core/editor');
       const hasAutomaticRequirements = automaticRuleKeys.size > 0;
-      const needsContent =
-		checklistData.automaticRequirements.some(
-		  (rule) => !rule.builtin && rule.hasClientEvaluator,
-		) ||
+      const needsContent = hasCustomEvaluator ||
         automaticRuleKeys.has('minimum_word_count') ||
         automaticRuleKeys.has('maximum_word_count') ||
         automaticRuleKeys.has('minimum_internal_link_count') ||
@@ -575,40 +614,29 @@
           : rawContent && typeof rawContent.raw === 'string'
             ? rawContent.raw
             : '';
+      const checkImageAlt = automaticRuleKeys.has('image_alt_text');
       const featuredMediaId = parseInt(
-        hasAutomaticRequirements &&
-		  (checklistData.automaticRequirements.some(
-		    (rule) => !rule.builtin && rule.hasClientEvaluator,
-		  ) ||
-		    automaticRuleKeys.has('featured_image') ||
-            automaticRuleKeys.has('image_alt_text'))
+        hasAutomaticRequirements && (hasCustomEvaluator || automaticRuleKeys.has('featured_image') || checkImageAlt)
           ? editor.getEditedPostAttribute('featured_media')
           : 0,
         10,
       );
-      const images = automaticRuleKeys.has('image_alt_text')
-        ? getContentImages(content)
-        : [];
-
-      if (!Number.isNaN(featuredMediaId) && featuredMediaId > 0) {
-        images.unshift({
-          id: featuredMediaId,
-          alt: '',
-          source: __('Featured image', 'editorial-workflow-manager'),
-        });
-      }
-
+      const contentImages = checkImageAlt ? getContentImages(content) : [];
+      const featuredImage = featuredMediaId > 0
+        ? { id: featuredMediaId, alt: '', source: __('Featured image', 'editorial-workflow-manager') }
+        : null;
+      const images = featuredImage ? [featuredImage, ...(contentImages || [])] : (contentImages || []);
+      const providerContentImages = checkImageAlt && hasCustomEvaluator ? getProviderImages(content) : [];
+      const providerImages = featuredImage ? [featuredImage, ...providerContentImages] : providerContentImages;
       const mediaAlts = {};
-      if (automaticRuleKeys.has('image_alt_text')) {
+      if (checkImageAlt) {
         const core = select('core');
-        images.forEach((image) => {
-          if (!image.id || mediaAlts[image.id] !== undefined) {
-            return;
+        const mediaImages = hasCustomEvaluator ? providerImages : (featuredImage ? [featuredImage] : []);
+        mediaImages.forEach((image) => {
+          if (image.id > 0 && mediaAlts[image.id] === undefined) {
+            const media = core.getMedia(image.id);
+            mediaAlts[image.id] = media && typeof media.alt_text === 'string' ? media.alt_text : '';
           }
-
-          const media = core.getMedia(image.id);
-          mediaAlts[image.id] =
-            media && typeof media.alt_text === 'string' ? media.alt_text : '';
         });
       }
 
@@ -662,6 +690,9 @@
               ? featuredMediaId
               : 0,
           images,
+          featuredImage,
+          providerImages,
+          imageScanFailed: contentImages === null,
           mediaAlts,
           taxonomyTerms,
         },

@@ -1,0 +1,98 @@
+[
+  {
+    "name": "gallery order and repeated attachment",
+    "content": "<!-- wp:gallery -->\n<figure><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img src=\"one.jpg\" alt=\"\"/></figure>\n<!-- /wp:image --><!-- wp:image {\"id\":22} -->\n<figure class=\"wp-block-image\"><img src=\"one.jpg\" alt=\"\"/></figure>\n<!-- /wp:image --><!-- wp:image {\"id\":22} -->\n<figure class=\"wp-block-image\"><img src=\"one.jpg\" alt=\"Two birds\"/></figure>\n<!-- /wp:image --></figure>\n<!-- /wp:gallery -->",
+    "statuses": [
+      "decorative",
+      "missing",
+      "pass"
+    ]
+  },
+  {
+    "name": "native, strict markers",
+    "content": "<!-- wp:image {\"isDecorative\":true} -->\n<figure class=\"wp-block-image\"><img src=\"one.jpg\" alt=\"\" role=\"none\"/></figure>\n<!-- /wp:image --><!-- wp:image {\"isDecorative\":\"true\",\"ediwormanDecorativeImage\":1} -->\n<figure class=\"wp-block-image\"><img alt=\"\"/></figure>\n<!-- /wp:image --><img role=\"presentation\" alt=\"\">",
+    "statuses": [
+      "decorative",
+      "missing",
+      "missing"
+    ]
+  },
+  {
+    "name": "quoted attributes and whitespace",
+    "content": "<img title=\"1 > 0 and <img alt=x>\" data-alt=\"ignore\" ALT=\"&nbsp; &#x2003; &#32\"> <img alt=\"&nbsp\"> <IMG alt=Bird><img alt=\"  \"><img data-alt=\"there\"><img alt=\"&amp;nbsp;\">",
+    "statuses": [
+      "missing",
+      "missing",
+      "pass",
+      "missing",
+      "missing",
+      "pass"
+    ]
+  },
+  {
+    "name": "marked ALT must be explicit and empty",
+    "content": "<!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img alt></figure>\n<!-- /wp:image --><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img></figure>\n<!-- /wp:image --><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img alt=''></figure>\n<!-- /wp:image --><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img alt=\" \"></figure>\n<!-- /wp:image --><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img alt=\"bird\"></figure>\n<!-- /wp:image -->",
+    "statuses": [
+      "invalid",
+      "invalid",
+      "decorative",
+      "invalid",
+      "invalid"
+    ]
+  },
+  {
+    "name": "interactive markup and settings",
+    "content": "<a href=\"/page\"><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img alt=\"\"></figure>\n<!-- /wp:image --></a><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22,\"linkDestination\":\"media\"} -->\n<figure class=\"wp-block-image\"><img alt=\"\"></figure>\n<!-- /wp:image --><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22,\"lightbox\":{\"enabled\":true}} -->\n<figure class=\"wp-block-image\"><img alt=\"\"></figure>\n<!-- /wp:image --><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22,\"lightbox\":{\"enabled\":false}} -->\n<figure class=\"wp-block-image\"><img alt=\"\"></figure>\n<!-- /wp:image --><a href=\"/page\"><img alt=\"Open photo\"></a>",
+    "statuses": [
+      "invalid",
+      "invalid",
+      "invalid",
+      "decorative",
+      "pass"
+    ]
+  },
+  {
+    "name": "plain and legacy HTML",
+    "content": "<!-- wp:gallery --><ul><li><img alt=\"\"></li><li><img alt=\"Old gallery\"></li></ul><!-- /wp:gallery --><!-- wp:html --><img alt=\"\"><img alt=\"Map\"><!-- /wp:html -->",
+    "statuses": [
+      "missing",
+      "pass",
+      "missing",
+      "pass"
+    ]
+  },
+  {
+    "name": "comments and inert markup",
+    "content": "<!-- <img alt=\"\"> --><script><img alt=\"\"></script><style><img alt=\"\"></style><template><img alt=\"\"></template><textarea><img alt=\"\"></textarea><img alt=\"Visible\">",
+    "statuses": [
+      "pass"
+    ]
+  },
+  {
+    "name": "cannot mark multiple images from one block",
+    "content": "<!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22} -->\n<figure class=\"wp-block-image\"><img alt=\"\"><img alt=\"\"></figure>\n<!-- /wp:image -->",
+    "statuses": [
+      "missing",
+      "missing"
+    ]
+  },
+  {
+    "name": "inherited and overridden lightbox",
+    "content": "<!-- wp:image {\"isDecorative\":true} -->\n<figure class=\"wp-block-image\"><img alt=\"\"></figure>\n<!-- /wp:image --><!-- wp:image {\"ediwormanDecorativeImage\":true,\"id\":22,\"lightbox\":{\"enabled\":false}} -->\n<figure class=\"wp-block-image\"><img alt=\"\"></figure>\n<!-- /wp:image --><!-- wp:image {\"isDecorative\":true,\"lightbox\":{}} -->\n<figure class=\"wp-block-image\"><img alt=\"\"></figure>\n<!-- /wp:image -->",
+    "statuses": [
+      "invalid",
+      "decorative",
+      "decorative"
+    ],
+    "lightboxDefault": true
+  },
+  {
+    "name": "references must not combine across whitespace",
+    "content": "<img alt=\"&em&ensp;sp;\"><img alt=\"&#&nbsp;32;\"><img alt=\"&#x&Tab;20;\">",
+    "statuses": [
+      "pass",
+      "pass",
+      "pass"
+    ]
+  }
+]

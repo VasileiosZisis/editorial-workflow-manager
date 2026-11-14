@@ -2,7 +2,7 @@
 
 This document tracks implementation status and delivery order for the Free plugin. [Product scope](product-scope.md) owns feature placement; technical behavior is documented in the [rule-registration API](rule-registration-api.md) and [publication policy](publication-policy.md).
 
-The current implemented baseline is **1.7.0**. All four feature additions in this Free delivery sequence are implemented, including JSON template portability. No future release numbers, dates, or effort estimates are assigned here.
+The current implemented baseline is **1.8.0**. All four feature additions in this Free delivery sequence are implemented, including JSON template portability. No future release numbers, dates, or effort estimates are assigned here.
 
 ## Completed milestones
 

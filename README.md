@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.7.0**
+Current release: **1.8.0**
 
 ## Technical highlights
 
@@ -81,7 +81,7 @@ Product scope defines feature placement, while the roadmaps distinguish complete
 - Review prompt user state: up to five completed post IDs, a snooze timestamp, and a closed status.
 - Publication modes: `publication_modes` inside `ediworman_settings`, keyed by post type (`advisory` or `block`).
 - Latest blocked attempt: `_ediworman_publication_blocked` stores a reason, scheduled-hold flag, and timestamp; current explanations are recomputed.
-- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.7.0`, independently per administrator and site. This JSON-transfer announcement replaces the earlier announcement and appears even if that earlier announcement was dismissed. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
+- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.8.0`, independently per administrator and site. The announcement explains decorative marking and the stricter image ALT requirement. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
 
 Legacy templates remain supported. When a legacy template is edited/saved in the row editor, it is upgraded to v2 and the legacy mirror meta remains written for compatibility.
 
@@ -102,6 +102,6 @@ Legacy templates remain supported. When a legacy template is edited/saved in the
 - Readiness depends on required manual items and enabled, applicable automatic requirements; optional items do not block completion.
 - Existing templates keep automatic requirements disabled until an editor enables them. Unsupported rules are excluded for the mapped post type.
 - Enabled third-party rules are required. PHP results are authoritative; optional JavaScript evaluators provide provisional live feedback.
-- The image alternative-text rule treats empty values and unavailable attachment records as incomplete; templates using intentionally decorative images can leave that rule disabled.
+- Use **Mark as decorative** in an Image block’s settings for that occurrence, including in galleries. A marked image passes with explicit empty ALT when it is unlinked and has no enabled lightbox. Other content images need nonblank stored ALT. Featured images use the Media Library ALT. Editors can convert older designations to the native WordPress setting from the block inspector.
 - Helper text and reference links are guidance only; they do not affect readiness.
 - Feedback and review features send no telemetry and contact WordPress.org only after an intentional link click.

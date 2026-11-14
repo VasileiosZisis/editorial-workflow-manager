@@ -47,6 +47,31 @@ class EDIWORMAN_Readiness {
 		add_action( 'deleted_post', array( __CLASS__, 'invalidate_link_slug_caches' ) );
 		add_action( 'edited_term', array( __CLASS__, 'handle_link_category_change' ), 10, 3 );
 		add_action( 'profile_update', array( __CLASS__, 'handle_link_author_change' ), 10, 2 );
+		add_action( 'save_post_wp_global_styles', array( __CLASS__, 'invalidate_image_alt_lightbox_caches' ) );
+		add_action( 'deleted_post', array( __CLASS__, 'handle_global_styles_delete' ), 10, 2 );
+		add_action( 'switch_theme', array( __CLASS__, 'invalidate_image_alt_lightbox_caches' ) );
+	}
+
+	/**
+	 * Recheck decorative images when the default lightbox may change.
+	 *
+	 * @return void
+	 */
+	public static function invalidate_image_alt_lightbox_caches() {
+		self::invalidate_caches_for_rule( EDIWORMAN_Automatic_Requirements::IMAGE_ALT_TEXT );
+	}
+
+	/**
+	 * Deleting global styles can restore a theme's lightbox default.
+	 *
+	 * @param int     $post_id Deleted post ID.
+	 * @param WP_Post $post Deleted post.
+	 * @return void
+	 */
+	public static function handle_global_styles_delete( $post_id, $post ) {
+		if ( 'wp_global_styles' === $post->post_type ) {
+			self::invalidate_image_alt_lightbox_caches();
+		}
 	}
 
 	/**

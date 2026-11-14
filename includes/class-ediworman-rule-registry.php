@@ -178,7 +178,7 @@ final class EDIWORMAN_Rule_Registry {
 	}
 
 	/**
-	 * Return the registry fingerprint used to invalidate aggregate caches.
+	 * Fingerprint rule definitions and server-side defaults used by readiness.
 	 *
 	 * @return string
 	 */
@@ -191,6 +191,9 @@ final class EDIWORMAN_Rule_Registry {
 				'post_types'   => $rule['post_types'],
 				'dependencies' => $rule['dependencies'],
 			);
+			if ( EDIWORMAN_Automatic_Requirements::IMAGE_ALT_TEXT === $rule_id ) {
+				$fingerprint_data[ $rule_id ]['lightbox_default'] = EDIWORMAN_Image_Alt::is_lightbox_enabled_by_default();
+			}
 		}
 
 		return md5( wp_json_encode( $fingerprint_data ) );

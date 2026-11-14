@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -283,11 +283,9 @@ The plugin reports this through its readiness system and pre-publish guidance. A
 
 Yes.
 
-The image alternative-text requirement checks featured and content images.
+Select an Image block and use **Mark as decorative** in the block settings when the image adds no information. This clears its alternative text for that occurrence, including within a gallery. An image with a link or enabled lightbox needs alternative text. On newer WordPress versions, you can convert an older designation using **Use WordPress decorative setting**.
 
-Images with empty alternative text or unavailable attachment records are treated as incomplete, and the checklist identifies the image position that needs attention.
-
-If your workflow intentionally uses decorative images with empty alternative text, leave this automatic requirement disabled for that template.
+Each unmarked content image, including images in Custom HTML and older galleries, needs a description in its stored ALT attribute. The featured image is checked separately using its Media Library description. The checklist identifies each image that needs attention, and the check scans stored markup. See [W3C guidance on decorative images](https://www.w3.org/WAI/tutorials/images/decorative/).
 
 = Does Editorial Workflow Manager block publishing? =
 
@@ -371,6 +369,12 @@ A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
 
+= 1.8.0 =
+
+* Added per-image decorative marking with support for the native Image block control and a fallback for older block editors.
+* Updated the image ALT requirement to use each content image’s stored ALT and report decorative images separately. Featured images still use Media Library ALT.
+* Refreshed cached readiness for the revised image ALT requirement.
+
 = 1.7.0 =
 
 * Added local JSON template export/import, with strict validation and an accessible server-side preview.
@@ -438,6 +442,10 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 == Upgrade Notice ==
+
+= 1.8.0 =
+
+The image ALT rule now checks stored content ALT. Add descriptions to informative images or explicitly mark eligible decorative Image blocks. Review scheduled posts under Block policy if they relied on Media Library ALT for content images.
 
 = 1.7.0 =
 

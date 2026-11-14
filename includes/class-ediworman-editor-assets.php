@@ -51,6 +51,15 @@ class EDIWORMAN_Editor_Assets {
 		}
 
 		wp_enqueue_script(
+			'ediworman-decorative-image',
+			EDIWORMAN_URL . 'assets/js/ediworman-decorative-image.js',
+			array( 'wp-block-editor', 'wp-blocks', 'wp-components', 'wp-element', 'wp-hooks', 'wp-i18n' ),
+			EDIWORMAN_VERSION,
+			true
+		);
+		wp_set_script_translations( 'ediworman-decorative-image', 'editorial-workflow-manager', EDIWORMAN_PATH . 'languages' );
+
+		wp_enqueue_script(
 			'ediworman-rule-api',
 			EDIWORMAN_URL . 'assets/js/rule-api.js',
 			array(),
@@ -77,7 +86,13 @@ class EDIWORMAN_Editor_Assets {
 		}
 
 		$editor_script_dependencies = array();
-		$internal_links_enabled = in_array( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT, array_column( $automatic_data['rules'], 'key' ), true );
+		$rule_keys = array_column( $automatic_data['rules'], 'key' );
+		$image_alt_enabled = in_array( EDIWORMAN_Automatic_Requirements::IMAGE_ALT_TEXT, $rule_keys, true );
+		if ( $image_alt_enabled ) {
+			wp_enqueue_script( 'ediworman-image-alt', EDIWORMAN_URL . 'assets/js/ediworman-image-alt.js', array( 'wp-block-serialization-default-parser' ), EDIWORMAN_VERSION, true );
+			$editor_script_dependencies[] = 'ediworman-image-alt';
+		}
+		$internal_links_enabled = in_array( EDIWORMAN_Automatic_Requirements::MINIMUM_INTERNAL_LINK_COUNT, $rule_keys, true );
 		if ( $internal_links_enabled ) {
 			wp_enqueue_script( 'ediworman-internal-links', EDIWORMAN_URL . 'assets/js/ediworman-internal-links.js', array(), EDIWORMAN_VERSION, true );
 			$editor_script_dependencies[] = 'ediworman-internal-links';
@@ -131,6 +146,9 @@ class EDIWORMAN_Editor_Assets {
 			'EDIWORMAN_CHECKLIST_DATA',
 			array(
 				'templateId'   => $template_id,
+				'imageAltContext' => $image_alt_enabled ? array(
+					'lightboxDefault' => EDIWORMAN_Image_Alt::is_lightbox_enabled_by_default(),
+				) : null,
 				'internalLinkContext' => $internal_links_enabled ? array(
 					'homeUrl' => home_url( '/' ),
 					'postUrl' => $permalink ? $permalink : home_url( '/' ),
