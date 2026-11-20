@@ -1,7 +1,7 @@
 name = "publication_integrity"
 description = "Read-only auditor for Editorial Workflow Manager publication gates, scheduled posts, REST saves, and publishing invariants."
 
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "high"
 
 developer_instructions = """

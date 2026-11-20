@@ -1,7 +1,7 @@
 name = "readiness_integrity"
 description = "Read-only auditor for checklist readiness, automatic rules, Gutenberg feedback, caches, and backward compatibility."
 
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "high"
 
 developer_instructions = """
