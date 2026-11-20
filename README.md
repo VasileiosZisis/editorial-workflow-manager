@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.8.0**
+Current release: **1.9.0**
 
 ## Technical highlights
 
@@ -25,6 +25,7 @@ Current release: **1.8.0**
 - Required and optional checklist items.
 - Eleven configurable automatic requirements: featured image, excerpt, minimum/maximum words, minimum unique internal links, category/tag presence, minimum/maximum categories, minimum/maximum tags, and image alternative-text coverage.
 - Public PHP and JavaScript registration API for code-defined automatic requirements.
+- Unavailable custom-check advisories in the editor, template settings, post lists, and dashboard. Ready reflects the applicable requirements that were evaluated.
 - Opt-in Advisory / Block publication policy per post type, with authoritative server checks and scheduled-publication revalidation.
 - Live automatic-result status in the block-editor sidebar.
 - Optional helper text and a reference URL per checklist item.

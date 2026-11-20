@@ -77,12 +77,14 @@ class EDIWORMAN_Editor_Assets {
 			'editorScripts'     => array(),
 		);
 		$template_data = EDIWORMAN_Readiness::get_template_data_for_post_type( $post_type );
+		$unavailable_rules = array();
 
 		if ( null !== $template_data ) {
 			$template_id    = $template_data['template_id'];
 			$template_mode  = $template_data['template_mode'];
 			$items          = $template_data['items'];
 			$automatic_data = EDIWORMAN_Automatic_Requirements::get_editor_data( $template_id, $post_type );
+			$unavailable_rules = EDIWORMAN_Automatic_Requirements::get_unavailable_custom_rule_ids( $template_data['automatic_requirements'] );
 		}
 
 		$editor_script_dependencies = array();
@@ -146,6 +148,7 @@ class EDIWORMAN_Editor_Assets {
 			'EDIWORMAN_CHECKLIST_DATA',
 			array(
 				'templateId'   => $template_id,
+				'unavailableChecksMessage' => EDIWORMAN_Automatic_Requirements::get_unavailable_custom_checks_message( $unavailable_rules ),
 				'imageAltContext' => $image_alt_enabled ? array(
 					'lightboxDefault' => EDIWORMAN_Image_Alt::is_lightbox_enabled_by_default(),
 				) : null,

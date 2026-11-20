@@ -453,6 +453,7 @@ class EDIWORMAN_Templates_CPT {
 	 */
 	private function render_automatic_requirements( $template_id ) {
 		$config      = EDIWORMAN_Automatic_Requirements::get_template_config( $template_id );
+		$unavailable_rules = EDIWORMAN_Automatic_Requirements::get_unavailable_custom_rule_ids( $config );
 		$definitions = EDIWORMAN_Automatic_Requirements::get_rule_definitions();
 		$limit_settings = EDIWORMAN_Automatic_Requirements::get_limit_settings();
 		$limit_labels = array(
@@ -473,6 +474,15 @@ class EDIWORMAN_Templates_CPT {
 			<p>
 				<?php esc_html_e( 'Enable lightweight checks that update automatically from post content and settings. They count as required and cannot be checked manually.', 'editorial-workflow-manager' ); ?>
 			</p>
+			<?php if ( $unavailable_rules ) : ?>
+				<p><strong><?php echo esc_html( EDIWORMAN_Automatic_Requirements::get_unavailable_custom_checks_message( $unavailable_rules ) ); ?></strong></p>
+				<ul class="ul-disc">
+					<?php foreach ( $unavailable_rules as $rule_id ) : ?>
+						<li><code><?php echo esc_html( $rule_id ); ?></code></li>
+					<?php endforeach; ?>
+				</ul>
+				<p><?php esc_html_e( 'The template keeps these settings. Each check resumes evaluation when its provider registers it again.', 'editorial-workflow-manager' ); ?></p>
+			<?php endif; ?>
 
 			<?php foreach ( $definitions as $rule_key => $definition ) : ?>
 				<?php

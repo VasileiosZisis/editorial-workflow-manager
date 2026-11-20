@@ -152,6 +152,8 @@
         scheduledHeld: rawData.publicationPolicy?.scheduledHeld === true,
       },
       automaticRequirements,
+      unavailableChecksMessage: typeof rawData.unavailableChecksMessage === 'string'
+        ? rawData.unavailableChecksMessage : '',
       internalLinkContext: rawData.internalLinkContext || {},
       imageAltContext: rawData.imageAltContext || {},
       taxonomyRestBases,
@@ -1021,6 +1023,15 @@
     );
   };
 
+  const UnavailableChecksNotice = () => {
+    if (!checklistData.unavailableChecksMessage) return null;
+    return el(
+      Notice,
+      { status: 'info', isDismissible: false },
+      checklistData.unavailableChecksMessage,
+    );
+  };
+
   const SidebarContent = ({ checklist, meta, post }) => {
     const {
       items,
@@ -1043,11 +1054,13 @@
         PanelBody,
         { title: __('Checklist', 'editorial-workflow-manager'), initialOpen: true },
         el(PublicationPolicyNotice, { checklist, post }),
-        el(
-          Notice,
-          { status: 'info', isDismissible: false },
-          __('No checklist requirements are configured for this post type.', 'editorial-workflow-manager'),
-        ),
+        checklistData.unavailableChecksMessage
+          ? el(UnavailableChecksNotice)
+          : el(
+            Notice,
+            { status: 'info', isDismissible: false },
+            __('No checklist requirements are configured for this post type.', 'editorial-workflow-manager'),
+          ),
       );
     }
 
@@ -1115,6 +1128,7 @@
           ),
         ),
       ),
+      el(UnavailableChecksNotice),
       optionalProgressText &&
         el(
           'p',
@@ -1274,7 +1288,9 @@
     } = checklist;
 
     if (!hasRequirements) {
-      return null;
+      return checklistData.unavailableChecksMessage
+        ? el(PluginPostStatusInfo, null, el('span', null, checklistData.unavailableChecksMessage))
+        : null;
     }
 
     const readinessLabel = readinessBoolean
@@ -1333,6 +1349,7 @@
             : 'ediworman-checklist-post-status is-incomplete',
         },
         text,
+        checklistData.unavailableChecksMessage && ` ${checklistData.unavailableChecksMessage}`,
       ),
     );
   };
@@ -1347,7 +1364,8 @@
     } = checklist;
 
     const block = checklistData.publicationPolicy.mode === 'block';
-    if ((!hasRequirements || readinessBoolean) && !block) {
+    const showIncompleteWarning = !block && hasRequirements && !readinessBoolean;
+    if (!block && !showIncompleteWarning && !checklistData.unavailableChecksMessage) {
       return null;
     }
 
@@ -1358,7 +1376,8 @@
         initialOpen: true,
       },
       block && el(PublicationPolicyNotice, { checklist, post }),
-      !block &&
+      el(UnavailableChecksNotice),
+      showIncompleteWarning &&
       el(
         Notice,
         {

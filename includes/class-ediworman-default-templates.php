@@ -38,19 +38,12 @@ class EDIWORMAN_Default_Templates {
 			}
 		}
 
-		// 2) Map "Blog Post SOP" to the "post" post type, if nothing set yet.
+		// Seed the initial mapping only when the site has no saved settings.
 		if ( isset( $created_ids['Blog Post SOP'] ) ) {
-			$settings = get_option( EDIWORMAN_Settings::OPTION_NAME, array() );
-
-			if ( ! isset( $settings['post_type_templates'] ) || ! is_array( $settings['post_type_templates'] ) ) {
-				$settings['post_type_templates'] = array();
-			}
-
-			// Only set if there is no mapping yet (don't overwrite user choices).
-			if ( empty( $settings['post_type_templates']['post'] ) ) {
-				$settings['post_type_templates']['post'] = $created_ids['Blog Post SOP'];
-				update_option( EDIWORMAN_Settings::OPTION_NAME, $settings );
-			}
+			add_option(
+				EDIWORMAN_Settings::OPTION_NAME,
+				array( 'post_type_templates' => array( 'post' => $created_ids['Blog Post SOP'] ) )
+			);
 		}
 	}
 

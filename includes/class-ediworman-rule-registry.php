@@ -415,7 +415,17 @@ final class EDIWORMAN_Rule_Registry {
 			return in_array( $rule_id, EDIWORMAN_Automatic_Requirements::get_builtin_rule_keys(), true );
 		}
 
-		return 1 === preg_match( '/^[a-z][a-z0-9_-]{1,31}\/[a-z][a-z0-9_-]{1,63}$/', $rule_id );
+		return self::is_valid_custom_rule_id( $rule_id );
+	}
+
+	/**
+	 * Check whether a stored ID matches the custom rule namespace syntax.
+	 *
+	 * @param string $rule_id Rule ID.
+	 * @return bool
+	 */
+	public static function is_valid_custom_rule_id( $rule_id ) {
+		return is_string( $rule_id ) && 1 === preg_match( '/^[a-z][a-z0-9_-]{1,31}\/[a-z][a-z0-9_-]{1,63}$/D', $rule_id );
 	}
 
 	/**

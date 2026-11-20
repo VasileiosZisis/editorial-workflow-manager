@@ -4,7 +4,7 @@ Administrators select Advisory or Block per post type in Settings → Editorial 
 
 ## What is checked
 
-Block gates a non-public post entering Publish, Private, or Scheduled. Existing published/private posts remain editable. Required manual items and enabled, applicable built-in and registered rules must pass. Optional items and `not_applicable` results are excluded. A valid template with no applicable requirements permits publication. Unavailable rule providers remain excluded under the 1.2.0 API contract; active evaluator errors fail safely.
+Block gates a non-public post entering Publish, Private, or Scheduled. Existing published/private posts remain editable. Required manual items and enabled, applicable built-in and registered rules must pass. Optional items and `not_applicable` results are excluded. A valid template with no applicable requirements permits publication. Unavailable rule providers remain excluded under the 1.2.0 API contract. The editor and admin readiness views show an advisory for enabled custom checks whose provider is unavailable. Ready reflects the applicable requirements that were evaluated. Active evaluator errors fail safely.
 
 The gate recalculates current requirements without trusting readiness cache metadata. It saves submitted content, terms, featured media, and checklist metadata under a non-public status, evaluates that saved state, and promotes it only on success. Drafts and autosaves remain available. Live editor feedback is provisional; PHP is authoritative.
 

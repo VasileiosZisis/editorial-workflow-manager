@@ -352,6 +352,7 @@ class EDIWORMAN_Manager_Visibility {
 		if ( empty( $post_types ) ) {
 			return;
 		}
+		$unavailable_messages = array();
 		?>
 		<p><?php esc_html_e( 'Review editorial readiness across mapped content. Not calculated posts can be refreshed from their post list.', 'editorial-workflow-manager' ); ?></p>
 		<table class="widefat striped ediworman-readiness-summary">
@@ -365,8 +366,22 @@ class EDIWORMAN_Manager_Visibility {
 			</thead>
 			<tbody>
 				<?php foreach ( $post_types as $post_type => $post_type_object ) : ?>
+					<?php
+					$template_id = EDIWORMAN_Settings::get_template_for_post_type( $post_type );
+					if ( $template_id && ! isset( $unavailable_messages[ $template_id ] ) ) {
+						$config = EDIWORMAN_Automatic_Requirements::get_template_config( $template_id );
+						$unavailable_rules = EDIWORMAN_Automatic_Requirements::get_unavailable_custom_rule_ids( $config );
+						$unavailable_messages[ $template_id ] = EDIWORMAN_Automatic_Requirements::get_unavailable_custom_checks_message( $unavailable_rules );
+					}
+					$message = $unavailable_messages[ $template_id ] ?? '';
+					?>
 					<tr>
-						<th scope="row"><?php echo esc_html( $post_type_object->labels->name ); ?></th>
+						<th scope="row">
+							<?php echo esc_html( $post_type_object->labels->name ); ?>
+							<?php if ( '' !== $message ) : ?>
+								<p class="description"><?php echo esc_html( $message ); ?></p>
+							<?php endif; ?>
+						</th>
 						<?php foreach ( array( self::FILTER_READY, self::FILTER_INCOMPLETE, self::FILTER_UNCALCULATED ) as $filter ) : ?>
 							<?php $count = $this->count_posts_for_filter( $post_type, $filter ); ?>
 							<td>

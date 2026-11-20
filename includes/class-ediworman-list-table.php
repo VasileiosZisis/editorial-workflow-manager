@@ -17,6 +17,13 @@ class EDIWORMAN_List_Table {
 	const READINESS_COLUMN = 'ediworman_readiness';
 
 	/**
+	 * Unavailable-check messages by template for the current list request.
+	 *
+	 * @var string[]
+	 */
+	private $unavailable_messages = array();
+
+	/**
 	 * Register admin list-table hooks.
 	 *
 	 * @return void
@@ -142,6 +149,18 @@ class EDIWORMAN_List_Table {
 			esc_html( $readiness_label ),
 			esc_html( $required_progress )
 		);
+
+		$template_id = EDIWORMAN_Settings::get_template_for_post_type( $post_type );
+		if ( $template_id ) {
+			if ( ! isset( $this->unavailable_messages[ $template_id ] ) ) {
+				$config = EDIWORMAN_Automatic_Requirements::get_template_config( $template_id );
+				$unavailable_rules = EDIWORMAN_Automatic_Requirements::get_unavailable_custom_rule_ids( $config );
+				$this->unavailable_messages[ $template_id ] = EDIWORMAN_Automatic_Requirements::get_unavailable_custom_checks_message( $unavailable_rules );
+			}
+			if ( '' !== $this->unavailable_messages[ $template_id ] ) {
+				printf( '<br><span class="description">%s</span>', esc_html( $this->unavailable_messages[ $template_id ] ) );
+			}
+		}
 
 		if ( EDIWORMAN_Readiness::READINESS_INCOMPLETE !== $readiness['readiness'] ) {
 			return;

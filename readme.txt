@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,7 @@ If a mapped post type does not support a particular requirement, that rule is ig
 Editorial Workflow Manager provides publishing-readiness feedback throughout the WordPress admin.
 
 * Editorial Checklist sidebar inside Gutenberg.
-* Ready / Incomplete status based on required items.
+* Ready / Incomplete status based on evaluated requirements, with an advisory when configured custom checks are unavailable.
 * Required-item progress while editing.
 * Post Status panel summary.
 * Pre-publish guidance reflecting the Advisory or Block publication policy.
@@ -369,6 +369,11 @@ A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
 
+= 1.9.0 =
+
+* Added unavailable custom-check advisories in the editor, template settings, post lists, and Editorial Readiness dashboard.
+* Preserved intentionally cleared template assignments during upgrades and reactivation.
+
 = 1.8.0 =
 
 * Added per-image decorative marking with support for the native Image block control and a fallback for older block editors.
@@ -442,6 +447,10 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 == Upgrade Notice ==
+
+= 1.9.0 =
+
+The editor and readiness screens now flag configured custom checks whose provider is unavailable. Ready reflects the requirements that were evaluated. Inactive checks remain excluded from publication enforcement and resume evaluation when their provider registers them again.
 
 = 1.8.0 =
 

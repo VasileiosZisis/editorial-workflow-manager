@@ -145,6 +145,41 @@ class EDIWORMAN_Automatic_Requirements {
 	}
 
 	/**
+	 * Find enabled custom rules without a current registration.
+	 *
+	 * @param array $config Normalized template configuration.
+	 * @return string[]
+	 */
+	public static function get_unavailable_custom_rule_ids( $config ) {
+		$registered = EDIWORMAN_Rule_Registry::get_rules();
+		$unavailable = array();
+		foreach ( $config as $id => $rule ) {
+			if ( ! empty( $rule['enabled'] ) && ! isset( $registered[ $id ] ) && EDIWORMAN_Rule_Registry::is_valid_custom_rule_id( $id ) ) {
+				$unavailable[] = $id;
+			}
+		}
+		return $unavailable;
+	}
+
+	/**
+	 * Format the advisory shared by the editor and admin screens.
+	 *
+	 * @param string[] $rule_ids Unavailable rule IDs.
+	 * @return string
+	 */
+	public static function get_unavailable_custom_checks_message( $rule_ids ) {
+		$count = count( $rule_ids );
+		if ( 0 === $count ) {
+			return '';
+		}
+		return sprintf(
+			/* translators: %s: number of unavailable custom checks. */
+			_n( '%s configured check is unavailable and was not evaluated.', '%s configured checks are unavailable and were not evaluated.', $count, 'editorial-workflow-manager' ),
+			number_format_i18n( $count )
+		);
+	}
+
+	/**
 	 * Sanitize automatic requirement configuration against the fixed Lite rules.
 	 *
 	 * @param mixed $raw_config Raw configuration.
