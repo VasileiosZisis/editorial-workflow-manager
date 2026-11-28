@@ -28,7 +28,7 @@ Pro rule library:
 - Advanced alternative-text length and conditional accessibility rules.
 - Conditional rules.
 - No-code custom rule composition.
-- Rules backed by supported external-plugin data.
+- First-party validation for Advanced Custom Fields (ACF) and one SEO plugin, configurable without code. See [First-party integrations](#7-first-party-integrations) for the initial scope.
 
 Rule-engine behavior:
 
@@ -45,23 +45,25 @@ Rule-engine behavior:
 Build granular policy controls on the existing Free Advisory / Block setting.
 
 - **Warning:** require explicit confirmation before continuing.
+- Configure which requirements apply by template or role.
 - Configure Advisory, Warning, or Restrict modes by template, post type, or role.
 - Enforce restricted publishing on the server as well as in the editor UI.
 - Define role-based bypass permissions.
-- Optionally require a reason when an authorized user bypasses a gate.
-- Record bypass actor, time, post, and reason in the audit log.
+- Require a reason when the applicable policy calls for one.
+- Ship the bypass audit record and a readable per-post activity timeline alongside the first bypass feature. Record the actor, time, post, policy or requirements bypassed, and reason when supplied.
 
 The default experience should remain low-friction; hard enforcement is an explicit administrator choice.
 
 ### 3. Lightweight approval workflow
 
-Turn checklist readiness into a simple accountability flow without requiring a full workflow designer.
+Start with one-step internal review for drafts. Review of proposed changes to already-published articles belongs in a later revision workflow.
 
-- Assign a post to a reviewer or approver.
+- Assign a draft to one reviewer.
 - Submit a Ready post for review.
 - Provide **Ready for review**, **Approved**, and **Changes requested** states.
-- Support a one-step author-to-editor approval flow.
-- Allow an approver to include a decision note.
+- Let the reviewer approve or request changes and record a decision note.
+- Bind each decision to the saved version the reviewer saw. Material changes make the prior approval stale and require a new decision.
+- Send the related review submission, approval, and changes-requested emails as part of the first review workflow.
 - Display the current assignee, state, and latest decision in the editor.
 - Apply capability checks to submission, approval, rejection, reassignment, and bypass actions.
 - Preserve WordPress post-status compatibility where practical.
@@ -112,22 +114,19 @@ Advanced bundles, cloning/version notes, network synchronization, and client-spe
 
 ### 7. First-party integrations
 
-Prioritize integrations in this order.
+Start with ACF and one SEO adapter. Add more adapters after those two integrations.
 
 #### SEO
 
-- Yoast SEO.
-- Rank Math.
-- All in One SEO.
-
-Expose relevant SEO fields and scores to automated requirements without duplicating or modifying the other plugin's data.
+- Target Yoast SEO for the first adapter. Expose concrete checks where supported, such as whether an SEO title or meta description is set. Treat any overall score as supplemental context.
+- Consider Rank Math and All in One SEO as later adapters.
 
 #### Structured content
 
 - Advanced Custom Fields Free and Pro.
-- Required ACF values.
-- Field-type-aware validation where practical.
-- Repeater or group validation as a later advanced rule.
+- Let checklist administrators select applicable ACF fields in the template UI and require values without writing code.
+- Start with straightforward types such as text, number, and date. Support cases such as a customer name, a product specification, or a review date.
+- Add repeater and group validation later.
 
 #### Authors and multilingual content
 
@@ -281,28 +280,25 @@ The Compliance Pack should focus on **controlled sign-off, audit readiness, dura
 1. Pro add-on architecture, compatibility checks, capabilities, and migrations.
 2. A setup flow, data preservation on activation/removal, and premium administration/documentation.
 
-### Phase 2: Advanced rules and policies
+### Phase 2: ACF and one SEO adapter
 
-1. H1/date/author and advanced accessibility rules, conditional rules, and no-code composition built on the Free registry.
-2. Per-template and per-role Advisory, Warning, and Restrict policies.
-3. Role-based bypass permissions and reasons, with audit recording delivered alongside the first bypass feature.
+1. Template-configurable ACF validation for straightforward fields and one SEO adapter focused on concrete checks.
 
-### Phase 3: Accountability, notifications, and audit
+### Phase 3: Draft review and accountable policies
 
-1. Assignees and lightweight approval states.
-2. Email notifications and workflow hooks.
-3. Basic audit log.
-4. Signed webhooks, retries, failure logs, and notification preferences; add overdue reminders when due dates are available.
+1. One-step draft review with assignment, submission, version-bound decisions, notes, and the associated emails.
+2. Requirements and policies by template or role. Ship authorized bypasses, configurable reasons, and a readable audit timeline together.
+3. Extend the operational audit log and add workflow hooks, signed webhooks, retries, failure logs, and notification preferences. Add overdue reminders when due dates are available.
 
 ### Phase 4: Advanced workflow portability
 
 1. Pro policy/approval configuration transfer and advanced controlled import/update workflows.
 2. Build on Free JSON template portability rather than introducing a competing basic format or restricting Free transfer.
 
-### Phase 5: Integrations and compatibility
+### Phase 5: Expanded rules, integrations, and compatibility
 
-1. Yoast SEO, Rank Math, and All in One SEO.
-2. Advanced Custom Fields.
+1. H1, date, author, and advanced accessibility rules, conditional rules, and no-code composition.
+2. Additional SEO adapters and advanced ACF validation.
 3. Co-Authors Plus or PublishPress Authors.
 4. WPML or Polylang.
 5. Multisite compatibility and optional WooCommerce expansion.

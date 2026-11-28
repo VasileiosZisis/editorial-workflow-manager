@@ -2,7 +2,7 @@
 
 This document tracks implementation status and delivery order for the Free plugin. [Product scope](product-scope.md) owns feature placement; technical behavior is documented in the [rule-registration API](rule-registration-api.md) and [publication policy](publication-policy.md).
 
-The current implemented baseline is **1.9.0**. All four feature additions in this Free delivery sequence are implemented, including JSON template portability. No future release numbers, dates, or effort estimates are assigned here.
+The current implemented baseline is **1.9.0**. The initial four-feature delivery sequence is complete, including JSON template portability. The next Free features are listed below in priority order. No future release numbers, dates, or effort estimates are assigned here.
 
 ## Completed milestones
 
@@ -20,7 +20,16 @@ The current implemented baseline is **1.9.0**. All four feature additions in thi
 
 Publication blocking is already implemented and remains Free. Its documented direct `wp_publish_post()` rollback limitation is not a promise of complete protection for raw or unsupported publication paths.
 
-## Feature delivery order and status
+## Planned Free features
+
+| Priority | Feature | Scope |
+|---|---|---|
+| 1 | Alerts for blocked scheduled posts | Offer an optional administrative email when a scheduled publication is held. Explain which requirements failed and link to the post so an editor can resolve the issue promptly. |
+| 2 | Filter posts by failed requirement | Let managers filter posts by a specific failed automatic check or incomplete manual item. Show counts and link to the affected posts so teams can work through failures such as missing excerpts, missing ALT text, or too few internal links. |
+| 3 | Reconfirm manual checks after content changes | Indicate when content has materially changed since editors completed their manual checks. Provide a **Recheck manual items** action so editors can verify the revised content. |
+| 4 | Title and excerpt length requirements | Let templates set optional minimum and maximum character counts for titles and excerpts. Show the actual character count and the applicable limit in check feedback. |
+
+## Completed feature delivery sequence
 
 ### 1. Maximum word count alongside minimum
 

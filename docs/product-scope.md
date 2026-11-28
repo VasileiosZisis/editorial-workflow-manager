@@ -23,16 +23,20 @@ The Free boundary includes both current functionality and the planned additions 
 | Reusable templates, required/optional items, helper text, reference links, duplication, and starter templates | Free | The complete manual-checklist workflow is the product foundation. |
 | Gutenberg checklist state, pre-publish guidance, onboarding, accessibility, feedback links, and dismissible review prompts | Free | Adoption and everyday usability should not require an add-on. |
 | Readiness column, exact filters, missing-item details, recalculation, and dashboard summary | Free | Managers need visibility into the same readiness result authors see. |
+| Filtering and counts by failed automatic requirement or incomplete manual item | Free | Managers can turn readiness findings into a work queue. |
+| Manual check reconfirmation after material content changes | Free | Editors can tell when prior checks need another review. |
 | Featured image, excerpt, and basic image alternative-text coverage | Free | Common publishing standards belong in baseline validation. |
+| Minimum and maximum title and excerpt length | Free | Ordinary character limits fit baseline editorial validation. |
 | Minimum and maximum word count | Free | Both ends of an ordinary content-length requirement are basic validation. |
 | Minimum and maximum category/tag counts | Free | Taxonomy checks should support ordinary publishing standards beyond simple presence. |
 | Basic internal-link count requirement | Free | A clear content requirement with broadly useful local validation. |
 | Public PHP and optional JavaScript rule-registration API | Free | Developers should be able to add site-specific checks without modifying the plugin. |
 | Opt-in Advisory / Block publication policy per post type | Free | Required items must be enforceable; Advisory remains the default. |
+| Optional administrative email for blocked scheduled publications | Free | Administrators can respond when a scheduled post is held. |
 | Basic JSON template import/export, including manual transfer between sites | Free | Template reuse reduces adoption friction, particularly for agencies. |
 | H1/date/author checks, advanced accessibility rules, conditional rules, no-code composition, and integration-backed validation | Pro | These address specialized content models and organization-specific policy. |
 | Granular template/role policies, Warning mode, governed bypasses, reasons, approvals, and assignments | Pro | Accountability and policy governance extend beyond basic readiness. |
-| Configurable workflow emails, reminders, signed webhooks, operational audit history, and advanced workflow portability | Pro | These coordinate and trace work across people and systems. |
+| Configurable emails for review, approval, and assignment workflows, reminders, signed webhooks, operational audit history, and advanced workflow portability | Pro | These coordinate and trace work across people and systems. |
 | First-party integrations, optional Classic Editor support, and premium administration/support | Pro | These introduce dedicated compatibility and operational responsibilities. |
 | Client review, branding, bundles, remote fleet operations, and network synchronization | Agency Pack | Managed reuse, client transparency, and agency-scale administration. |
 | Custom statuses, ownership, due dates, queues, calendar, Kanban, and workload views | Publisher Pack | Editorial pipeline planning is a separate, later product layer. |
