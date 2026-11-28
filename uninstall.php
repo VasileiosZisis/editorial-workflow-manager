@@ -43,6 +43,11 @@ function ediworman_uninstall_cleanup_site() {
 	delete_option( 'ediworman_quickstart_pending_version' );
 	delete_option( 'ediworman_readiness_cache_version' );
 	delete_option( 'ediworman_rule_registry_fingerprint' );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Discover private non-autoloaded alert claims for Options API cleanup.
+	$alert_claims = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'ediworman_scheduled_hold_alert_' ) . '%' ) );
+	foreach ( $alert_claims as $alert_claim ) {
+		delete_option( $alert_claim );
+	}
 
 	// Remove post meta stored on edited content.
 	delete_post_meta_by_key( '_ediworman_checked_items' );

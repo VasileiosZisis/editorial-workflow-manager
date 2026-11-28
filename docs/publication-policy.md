@@ -1,4 +1,4 @@
-# Publication policy (1.3.0)
+# Publication policy
 
 Administrators select Advisory or Block per post type in Settings → Editorial Workflow. Advisory is the default on both fresh installs and upgrades. Block requires a valid mapped checklist template when first enabled. If that template is later removed, the policy stays active and publication is held until an administrator fixes the mapping or chooses Advisory.
 
@@ -16,6 +16,14 @@ Scheduled posts are checked both when scheduling and when their publication is d
 
 The latest failure marker is `_ediworman_publication_blocked`, containing only its reason, scheduled-hold flag, and timestamp. This is recovery state, not an audit history. Editor/list explanations are recomputed and resolved markers are removed lazily. Uninstall removes the marker and existing settings on each site.
 
+## Email alerts for blocked scheduled posts
+
+In **Settings → Editorial Workflow**, a site administrator can enable alerts and choose one dedicated recipient for the site. Alerts default to off on fresh installations and upgrades. The chosen recipient should be able to open the post editor and resolve the problem.
+
+When Block holds a due scheduled post as a draft, the plugin attempts one plain-text email for that scheduled occurrence through WordPress mail. It includes the site and post title, the failed requirements or missing-template guidance, and a link to the WordPress editor. The email leaves out the draft body. The editor link requires sign-in and normal edit permissions.
+
+A later scheduled occurrence can trigger another alert. Mail transport failures leave the draft and its recovery notice available. Manual publication failures and posts that fail before they can be scheduled are handled in the editor.
+
 ## Supported integrations and limits
 
 Gutenberg, the core REST posts controller, Quick Edit, bulk editing, and `wp_insert_post()`/`wp_update_post()` are guarded. Programmatic save functions can still return a post ID when publication is held; integrations must inspect `get_post_status()` before claiming success. Saves with after-insert hooks disabled use the ordinary insert-hook fallback. REST saves defer promotion until metadata and additional fields have completed successfully.
@@ -24,4 +32,4 @@ Holding then promoting a post invokes save hooks more than once. Integrations sh
 
 WordPress's lower-level `wp_publish_post()` directly writes the public status before its first transition hook. The plugin adds a defensive rollback on that path, but cannot prevent transient visibility or guarantee that third-party publication callbacks will not run. Use the guarded save APIs for integrations that need reliable pre-publication enforcement. Raw SQL status changes and plugins that remove or override enforcement hooks are outside this contract.
 
-There are no role-based bypasses, one-off exceptions, or automatic retries. Administrators can fix the template or return a post type to Advisory. No telemetry or external requests are introduced.
+Administrators can fix the template or return a post type to Advisory. Publication and alert delivery have no automatic retries. The plugin sends alerts through the site's WordPress mail transport only when an administrator enables them.

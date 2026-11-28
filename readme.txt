@@ -4,7 +4,7 @@ Tags: checklist, editorial workflow, gutenberg, publishing, content workflow
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.9.0
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -295,6 +295,8 @@ Advisory is the default. Administrators can select Block per mapped post type to
 
 Scheduled posts are rechecked when due. Failed checks return the post to Draft; an authorized user must resolve its requirements and publish or schedule it again. If a Block policy loses its template, an administrator must assign a replacement or select Advisory.
 
+To receive an email when a scheduled post is held, enable **Email alerts for blocked scheduled posts** in **Settings → Editorial Workflow** and enter a dedicated recipient. The email includes the failed requirements or missing-template guidance and a link to the editor. Alerts are off by default. Delivery uses the site's WordPress mail setup.
+
 Core REST, Quick Edit, bulk editing, and standard programmatic saves are guarded. The lower-level wp_publish_post() API receives a defensive rollback, but WordPress writes its status before that hook, so transient visibility and third-party publication side effects cannot be fully prevented. Raw database writes are outside supported enforcement. See docs/publication-policy.md for integration details.
 
 = Can I use different editorial checklists for different post types? =
@@ -368,6 +370,11 @@ Templates use an upgraded v2 format with UUID-based item IDs for more stable mat
 A compatibility metadata mirror is maintained for legacy support.
 
 == Changelog ==
+
+= 2.0.0 =
+
+* Added optional email alerts for posts held as drafts during scheduled publication under Block policy.
+* Added a dedicated alert recipient setting and prevention of duplicate mail attempts for the same scheduled occurrence.
 
 = 1.9.0 =
 
@@ -447,6 +454,10 @@ A compatibility metadata mirror is maintained for legacy support.
 * Added an Editorial Readiness dashboard summary with links to filtered post lists.
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+
+Optional scheduled publication alerts are off after upgrading. To enable them, enter a dedicated recipient in Settings → Editorial Workflow. Your template assignments and publication policies stay in effect.
 
 = 1.9.0 =
 

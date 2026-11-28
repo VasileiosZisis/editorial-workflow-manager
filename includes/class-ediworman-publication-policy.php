@@ -52,6 +52,7 @@ final class EDIWORMAN_Publication_Policy {
 		add_action( 'rest_api_init', array( __CLASS__, 'register_rest_hooks' ) );
 		add_filter( 'rest_request_after_callbacks', array( __CLASS__, 'finish_rest_response' ), PHP_INT_MAX, 3 );
 		add_action( 'publish_future_post', array( __CLASS__, 'check_scheduled_post' ), 0 );
+		add_action( 'deleted_post', array( 'EDIWORMAN_Scheduled_Hold_Alerts', 'delete_claim' ) );
 		add_action( 'transition_post_status', array( __CLASS__, 'guard_direct_publication' ), -1000, 3 );
 		if ( is_admin() ) {
 			add_filter( 'display_post_states', array( __CLASS__, 'add_post_state' ), 10, 2 );
@@ -272,13 +273,20 @@ final class EDIWORMAN_Publication_Policy {
 	 */
 	public static function check_scheduled_post( $post_id ) {
 		$post = get_post( $post_id );
-		if ( ! $post || 'future' !== $post->post_status || strtotime( $post->post_date_gmt . ' GMT' ) > time() ) {
+		if ( ! $post || 'future' !== $post->post_status ) {
+			return;
+		}
+		$scheduled_time = strtotime( $post->post_date_gmt . ' GMT' );
+		if ( $scheduled_time > time() ) {
 			return;
 		}
 		$details = self::evaluate_gate( $post->ID );
 		if ( ! empty( $details['missing'] ) ) {
-			wp_update_post( array( 'ID' => $post->ID, 'post_status' => 'draft' ) );
+			$updated = wp_update_post( array( 'ID' => $post->ID, 'post_status' => 'draft' ), true );
 			self::record_block( $post->ID, $details, true );
+			if ( $post->ID === $updated && $scheduled_time > 0 && 'draft' === get_post_status( $post->ID ) ) {
+				EDIWORMAN_Scheduled_Hold_Alerts::send( $post, $scheduled_time, $details['missing'] );
+			}
 		}
 	}
 

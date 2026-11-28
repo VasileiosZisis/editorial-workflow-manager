@@ -22,7 +22,7 @@ class EDIWORMAN_Settings {
 	/**
 	 * Fixed feature announcement identity; routine updates must not reset it.
 	 */
-	const PUBLICATION_ANNOUNCEMENT_VERSION = '1.8.0';
+	const PUBLICATION_ANNOUNCEMENT_VERSION = '2.0.0';
 	const PUBLICATION_ANNOUNCEMENT_USER_OPTION = 'ediworman_publication_announcement_dismissed';
 	const PUBLICATION_ANNOUNCEMENT_ACTION = 'ediworman_dismiss_publication_announcement';
 	const PUBLICATION_ANNOUNCEMENT_NONCE_NAME = '_ediworman_announcement_nonce';
@@ -123,8 +123,8 @@ class EDIWORMAN_Settings {
 		}
 		?>
 		<div id="ediworman-publication-announcement" class="notice notice-info">
-			<p><strong><?php esc_html_e( 'New in 1.8.0 · Decorative images', 'editorial-workflow-manager' ); ?></strong></p>
-			<p><?php esc_html_e( 'Use Mark as decorative in the Image block settings for images that add no information. The image alternative-text requirement now checks the description stored on each content image. If you use Block mode, review scheduled posts that relied on Media Library descriptions for content images.', 'editorial-workflow-manager' ); ?></p>
+			<p><strong><?php esc_html_e( 'New in 2.0.0 · Alerts for blocked scheduled posts', 'editorial-workflow-manager' ); ?></strong></p>
+			<p><?php esc_html_e( 'Get an email when Block holds a scheduled post as a draft. Under Scheduled publication alerts below, enable email alerts and enter a dedicated recipient. Each alert explains what failed and links to the post editor.', 'editorial-workflow-manager' ); ?></p>
 			<form id="ediworman-publication-announcement-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::PUBLICATION_ANNOUNCEMENT_ACTION ); ?>">
 				<?php wp_nonce_field( self::PUBLICATION_ANNOUNCEMENT_ACTION, self::PUBLICATION_ANNOUNCEMENT_NONCE_NAME, false ); ?>
@@ -196,7 +196,50 @@ class EDIWORMAN_Settings {
 			$policies[ $post_type ] = $mode;
 		}
 
-		return array( 'post_type_templates' => $mappings, 'publication_modes' => $policies );
+		$settings = array( 'post_type_templates' => $mappings, 'publication_modes' => $policies );
+		if ( array_key_exists( 'scheduled_hold_alerts', $input ) ) {
+			$previous = self::read_scheduled_hold_alerts( $existing );
+			$submitted = $input['scheduled_hold_alerts'];
+			$enabled = is_array( $submitted ) && in_array( $submitted['enabled'] ?? false, array( true, 1, '1' ), true );
+			$email = is_array( $submitted ) ? ( $submitted['email'] ?? '' ) : null;
+			$email = is_string( $email ) ? trim( $email ) : null;
+			if ( null === $email || ( '' === $email ? $enabled : ! is_email( $email ) ) ) {
+				add_settings_error( self::OPTION_NAME, 'ediworman_scheduled_hold_alert_email', __( 'Enter a valid recipient email address for scheduled publication alerts. Your previous alert settings were kept.', 'editorial-workflow-manager' ) );
+				$settings['scheduled_hold_alerts'] = $previous;
+			} else {
+				$settings['scheduled_hold_alerts'] = array( 'enabled' => $enabled, 'email' => sanitize_email( $email ) );
+			}
+		} elseif ( isset( $existing['scheduled_hold_alerts'] ) ) {
+			$settings['scheduled_hold_alerts'] = self::read_scheduled_hold_alerts( $existing );
+		}
+
+		return $settings;
+	}
+
+	/**
+	 * Return alert settings for the current site.
+	 *
+	 * @return array{enabled:bool,email:string}
+	 */
+	public static function get_scheduled_hold_alerts() {
+		return self::read_scheduled_hold_alerts( get_option( self::OPTION_NAME, array() ) );
+	}
+
+	/**
+	 * Normalize the alert settings used by the settings form and scheduled jobs.
+	 *
+	 * @param mixed $settings Site settings.
+	 * @return array{enabled:bool,email:string}
+	 */
+	private static function read_scheduled_hold_alerts( $settings ) {
+		$alerts = is_array( $settings ) ? ( $settings['scheduled_hold_alerts'] ?? array() ) : array();
+		$alerts = is_array( $alerts ) ? $alerts : array();
+		$email = $alerts['email'] ?? '';
+		$email = is_string( $email ) && is_email( $email ) ? $email : '';
+		return array(
+			'enabled' => '' !== $email && ( true === ( $alerts['enabled'] ?? false ) ),
+			'email'   => $email,
+		);
 	}
 
 	/**
@@ -227,6 +270,7 @@ class EDIWORMAN_Settings {
 		if ( ! is_array( $settings ) ) {
 			$settings = array();
 		}
+		$alerts = self::read_scheduled_hold_alerts( $settings );
 
 		$mappings   = isset( $settings['post_type_templates'] ) ? $settings['post_type_templates'] : array();
 		$post_types = self::get_settings_post_types();
@@ -327,6 +371,20 @@ class EDIWORMAN_Settings {
 									</tbody>
 								</table>
 								<p id="ediworman-publication-help" class="description"><?php esc_html_e( 'Advisory shows warnings. Block requires completion before first publication or scheduling, and checks scheduled posts again when due. Published and private posts remain editable. If a template is removed, assign a replacement or choose Advisory.', 'editorial-workflow-manager' ); ?></p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Scheduled publication alerts', 'editorial-workflow-manager' ); ?></th>
+							<td>
+								<label for="ediworman-scheduled-hold-alerts">
+									<input type="checkbox" id="ediworman-scheduled-hold-alerts" name="ediworman_settings[scheduled_hold_alerts][enabled]" value="1" <?php checked( $alerts['enabled'] ); ?> aria-describedby="ediworman-scheduled-hold-help">
+									<?php esc_html_e( 'Email alerts for blocked scheduled posts', 'editorial-workflow-manager' ); ?>
+								</label>
+								<p>
+									<label for="ediworman-scheduled-hold-email"><?php esc_html_e( 'Alert recipient email', 'editorial-workflow-manager' ); ?></label><br>
+									<input type="email" id="ediworman-scheduled-hold-email" name="ediworman_settings[scheduled_hold_alerts][email]" value="<?php echo esc_attr( $alerts['email'] ); ?>" class="regular-text" aria-describedby="ediworman-scheduled-hold-help">
+								</p>
+								<p id="ediworman-scheduled-hold-help" class="description"><?php esc_html_e( 'Choose an address monitored by the people who can fix and reschedule these posts. Alerts include the post title, failed requirements, and a link to the editor.', 'editorial-workflow-manager' ); ?></p>
 							</td>
 						</tr>
 					</tbody>

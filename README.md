@@ -4,7 +4,7 @@
 
 Editorial Workflow Manager helps editors and content teams create reusable checklists, track readiness, and follow a consistent pre-publish process directly inside the WordPress block editor.
 
-Current release: **1.9.0**
+Current release: **2.0.0**
 
 ## Technical highlights
 
@@ -27,6 +27,7 @@ Current release: **1.9.0**
 - Public PHP and JavaScript registration API for code-defined automatic requirements.
 - Unavailable custom-check advisories in the editor, template settings, post lists, and dashboard. Ready reflects the applicable requirements that were evaluated.
 - Opt-in Advisory / Block publication policy per post type, with authoritative server checks and scheduled-publication revalidation.
+- Optional email alerts when a due scheduled post is held. Set a dedicated recipient in **Settings → Editorial Workflow** to receive the failed requirements and a link to the editor.
 - Live automatic-result status in the block-editor sidebar.
 - Optional helper text and a reference URL per checklist item.
 - Per-post checklist state in Gutenberg.
@@ -82,7 +83,8 @@ Product scope defines feature placement, while the roadmaps distinguish complete
 - Review prompt user state: up to five completed post IDs, a snooze timestamp, and a closed status.
 - Publication modes: `publication_modes` inside `ediworman_settings`, keyed by post type (`advisory` or `block`).
 - Latest blocked attempt: `_ediworman_publication_blocked` stores a reason, scheduled-hold flag, and timestamp; current explanations are recomputed.
-- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `1.8.0`, independently per administrator and site. The announcement explains decorative marking and the stricter image ALT requirement. Routine plugin updates do not reset dismissal of the same announcement; uninstall removes it.
+- Scheduled hold alerts use the site's saved opt-in and recipient. A private, non-autoloaded option stores the most recent scheduled time for which the plugin attempted an alert. Deleting the post or uninstalling the plugin removes that record.
+- Settings announcement dismissal: site-scoped user option `ediworman_publication_announcement_dismissed` stores the fixed announcement version `2.0.0`, independently per administrator and site. The announcement explains how to set up email alerts for blocked scheduled posts. Routine plugin updates do not reset dismissal of the same announcement. Uninstall removes the option.
 
 Legacy templates remain supported. When a legacy template is edited/saved in the row editor, it is upgraded to v2 and the legacy mirror meta remains written for compatibility.
 
